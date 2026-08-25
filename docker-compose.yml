@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: gbemi
+      POSTGRES_PASSWORD: change-this-password
+      POSTGRES_DB: gbemiolofada
+    ports:
+      - "5432:5432"
+    volumes:
+      - gbemi_db:/var/lib/postgresql/data
+volumes:
+  gbemi_db:
