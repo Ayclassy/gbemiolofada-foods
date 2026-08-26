@@ -14,7 +14,6 @@ import {
   Flame,
   Star,
   ArrowRight,
-  LogIn,
   Phone,
   Mail,
   Home,
@@ -138,9 +137,7 @@ const MENU = [
 
 const cats = ["All", "Rice & Swallow", "Soups", "Proteins", "Drinks"];
 
-const money = (n) => "₦" + n.toLocaleString("en-NG");
-
-const API_URL = "https://gbemiolofada-foods1.vercel.app/api";
+const money = (n) => "₦" + Number(n || 0).toLocaleString("en-NG");
 
 function App() {
   const [cat, setCat] = useState("All");
@@ -148,11 +145,11 @@ function App() {
   const [cart, setCart] = useState([]);
 
   const [drawer, setDrawer] = useState(false);
-  const [accountOpen, setAccountOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   const [customer, setCustomer] = useState({
     name: "",
@@ -161,7 +158,7 @@ function App() {
     address: ""
   });
 
-const items = useMemo(
+  const items = useMemo(
     () =>
       MENU.filter(
         (m) =>
@@ -176,8 +173,8 @@ const items = useMemo(
 
   const count = cart.reduce((s, i) => s + i.qty, 0);
   const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-  const delivery = cart.length ? 500 : 0;
-  const total = subtotal + delivery;
+  const deliveryFee = cart.length ? 500 : 0;
+  const total = subtotal + deliveryFee;
 
   function add(item) {
     setCart((current) =>
@@ -207,68 +204,70 @@ const items = useMemo(
       return;
     }
 
-    setError("");
     setDrawer(false);
+    setErrorMessage("");
     setCheckoutOpen(true);
   }
 
   async function placeOrder(e) {
     e.preventDefault();
 
-    setError("");
-
     if (
       !customer.name.trim() ||
       !customer.phone.trim() ||
       !customer.address.trim()
     ) {
-      setError(
-        "Please fill in your name, phone number and delivery address."
+      setErrorMessage(
+        "Please enter your full name, phone number and delivery address."
       );
       return;
     }
 
+    setSubmitting(true);
+    setErrorMessage("");
+
+    const orderData = {
+      customer_name: customer.name.trim(),
+      customer_phone: customer.phone.trim(),
+      customer_email: customer.email.trim() || null,
+      delivery_address: customer.address.trim(),
+
+      items: cart.map((item) => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.qty
+      })),
+
+      subtotal,
+      delivery_fee: deliveryFee,
+      total
+    };
+
     try {
-      setSubmitting(true);
-
-      const order = {
-        customer_name: customer.name.trim(),
-        customer_phone: customer.phone.trim(),
-        customer_email: customer.email.trim(),
-        delivery_address: customer.address.trim(),
-        items: cart.map((item) => ({
-          id: item.id,
-          name: item.name,
-          price: item.price,
-          quantity: item.qty
-        })),
-        subtotal,
-        delivery_fee: delivery,
-        total
-      };
-
-      const response = await fetch(API_URL, {
+      const response = await fetch("/api/orders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify(order)
+        body: JSON.stringify(orderData)
       });
 
-      const data = await response.json().catch(() => ({}));
+      const result = await response.json();
 
-      if (!response.ok) {
+      if (!response.ok || !result.success) {
         throw new Error(
-          data.message || data.error || "Unable to place your order."
+          result.message || "Unable to save your order."
         );
       }
 
       setCheckoutOpen(false);
       setOrderComplete(true);
-    } catch (err) {
-      setError(
-        err.message ||
-          "Something went wrong while placing your order."
+    } catch (error) {
+      console.error("Order submission error:", error);
+
+      setErrorMessage(
+        "We couldn't save your order right now. Please try again."
       );
     } finally {
       setSubmitting(false);
@@ -278,13 +277,13 @@ const items = useMemo(
   function finishOrder() {
     setCart([]);
     setOrderComplete(false);
+
     setCustomer({
       name: "",
       phone: "",
       email: "",
       address: ""
     });
-    setError("");
   }
 
   return (
@@ -350,8 +349,8 @@ const items = useMemo(
             </h1>
 
             <p>
-              Comforting Nigerian meals, prepared fresh and delivered
-              to your door while they're still hot.
+              Comforting Nigerian meals, prepared fresh and
+              delivered to your door while they're still hot.
             </p>
 
             <div className="hero-actions">
@@ -377,7 +376,10 @@ const items = useMemo(
 
           <div className="hero-visual">
             <div className="hero-card">
-              <img src={MENU[0].image} alt="Jollof rice" />
+              <img
+                src={MENU[0].image}
+                alt="Jollof rice"
+              />
 
               <div className="floating-card">
                 <div className="stars">★★★★★</div>
@@ -414,7 +416,9 @@ const items = useMemo(
           <div className="chips">
             {cats.map((c) => (
               <button
-                className={cat === c ? "chip active" : "chip"}
+                className={
+                  cat === c ? "chip active" : "chip"
+                }
                 onClick={() => setCat(c)}
                 key={c}
               >
@@ -425,12 +429,20 @@ const items = useMemo(
 
           <div className="grid">
             {items.map((item) => (
-              <article className="food-card" key={item.id}>
+              <article
+                className="food-card"
+                key={item.id}
+              >
                 <div className="food-img">
-                  <img src={item.image} alt={item.name} />
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                  />
 
                   {item.tag && (
-                    <span className="tag">{item.tag}</span>
+                    <span className="tag">
+                      {item.tag}
+                    </span>
                   )}
 
                   <button
@@ -444,7 +456,9 @@ const items = useMemo(
                 <div className="food-body">
                   <div className="food-meta">
                     <span>{item.cat}</span>
-                    <strong>{money(item.price)}</strong>
+                    <strong>
+                      {money(item.price)}
+                    </strong>
                   </div>
 
                   <h3>{item.name}</h3>
@@ -465,9 +479,9 @@ const items = useMemo(
 
         <section className="why" id="why">
           <div className="section narrow">
-            <div className="kicker">WHY
-
-              GBEMIOLOFADA</div>
+            <div className="kicker">
+              WHY GBEMIOLOFADA
+            </div>
 
             <h2>
               We don't just serve food.
@@ -514,7 +528,7 @@ const items = useMemo(
             <Step
               n="02"
               title="Checkout securely"
-              text="Enter your delivery details and complete your order."
+              text="Enter your delivery details and pay securely online."
             />
 
             <Step
@@ -531,7 +545,9 @@ const items = useMemo(
           <div className="logo">Go</div>
 
           <div>
-            <div className="brand-name">Gbemiolofada</div>
+            <div className="brand-name">
+              Gbemiolofada
+            </div>
             <div className="brand-sub">FOODS</div>
           </div>
         </div>
@@ -554,12 +570,13 @@ const items = useMemo(
           </span>
 
           <strong>
-            {money(subtotal)} <ChevronRight size={18} />
+            {money(subtotal)}
+            <ChevronRight size={18} />
           </strong>
         </button>
       )}
 
-      {/* CART */}
+      {/* CART DRAWER */}
       {drawer && (
         <div
           className="overlay"
@@ -571,11 +588,16 @@ const items = useMemo(
           >
             <div className="drawer-head">
               <div>
-                <div className="kicker">YOUR ORDER</div>
+                <div className="kicker">
+                  YOUR ORDER
+                </div>
+
                 <h2>Ready to eat?</h2>
               </div>
 
-              <button onClick={() => setDrawer(false)}>
+              <button
+                onClick={() => setDrawer(false)}
+              >
                 <X />
               </button>
             </div>
@@ -588,7 +610,9 @@ const items = useMemo(
 
                 <button
                   className="primary"
-                  onClick={() => setDrawer(false)}
+                  onClick={() =>
+                    setDrawer(false)
+                  }
                 >
                   Browse menu
                 </button>
@@ -597,17 +621,27 @@ const items = useMemo(
               <>
                 <div className="cart-items">
                   {cart.map((i) => (
-                    <div className="cart-item" key={i.id}>
-                      <img src={i.image} alt={i.name} />
+                    <div
+                      className="cart-item"
+                      key={i.id}
+                    >
+                      <img
+                        src={i.image}
+                        alt={i.name}
+                      />
 
                       <div className="ci-main">
                         <strong>{i.name}</strong>
 
-                        <span>{money(i.price)}</span>
+                        <span>
+                          {money(i.price)}
+                        </span>
 
                         <div className="qty">
                           <button
-                            onClick={() => change(i.id, -1)}
+                            onClick={() =>
+                              change(i.id, -1)
+                            }
                           >
                             <Minus size={14} />
                           </button>
@@ -615,7 +649,9 @@ const items = useMemo(
                           <b>{i.qty}</b>
 
                           <button
-                            onClick={() => change(i.id, 1)}
+                            onClick={() =>
+                              change(i.id, 1)
+                            }
                           >
                             <Plus size={14} />
                           </button>
@@ -628,30 +664,36 @@ const items = useMemo(
                 <div className="checkout">
                   <div>
                     <span>Subtotal</span>
-                    <strong>{money(subtotal)}</strong>
+                    <strong>
+                      {money(subtotal)}
+                    </strong>
                   </div>
 
                   <div>
                     <span>Delivery</span>
-                    <strong>{money(delivery)}</strong>
+                    <strong>
+                      {money(deliveryFee)}
+                    </strong>
                   </div>
 
                   <div className="total">
                     <span>Total</span>
-                    <strong>{money(total)}</strong>
+                    <strong>
+                      {money(total)}
+                    </strong>
                   </div>
 
                   <button
                     className="primary full"
                     onClick={startCheckout}
                   >
-                    Continue to checkout{" "}
+                    Continue to checkout
                     <ArrowRight size={17} />
                   </button>
 
                   <small>
-                    Secure checkout · Your order details are kept
-                    private.
+                    Secure checkout · Your order
+                    details are kept private.
                   </small>
                 </div>
               </>
@@ -668,11 +710,15 @@ const items = useMemo(
         >
           <div
             className="modal"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) =>
+              e.stopPropagation()
+            }
           >
             <button
               className="modal-close"
-              onClick={() => setAccountOpen(false)}
+              onClick={() =>
+                setAccountOpen(false)
+              }
             >
               <X />
             </button>
@@ -681,24 +727,28 @@ const items = useMemo(
               <User size={25} />
             </div>
 
-            <div className="kicker">YOUR ACCOUNT</div>
+            <div className="kicker">
+              YOUR ACCOUNT
+            </div>
 
-            <h2>Welcome to Gbemiolofada Foods</h2>
+            <h2>
+              Welcome to Gbemiolofada Foods
+            </h2>
 
             <p>
-              Sign in to save your details, view your orders and
-              make future checkout faster.
+              Sign in to save your details, view
+              your orders and make future checkout
+              faster.
             </p>
 
             <button
               className="primary full"
               onClick={() =>
                 alert(
-                  "Account sign-in will be connected to the secure backend next."
+                  "Account sign-in will be connected next."
                 )
               }
             >
-              <LogIn size={17} />
               Sign in
             </button>
 
@@ -706,7 +756,7 @@ const items = useMemo(
               className="secondary full"
               onClick={() =>
                 alert(
-                  "Account registration will be connected to the secure backend next."
+                  "Account registration will be connected next."
                 )
               }
             >
@@ -720,33 +770,55 @@ const items = useMemo(
       {checkoutOpen && (
         <div
           className="overlay"
-          onClick={() => setCheckoutOpen(false)}
+          onClick={() => {
+            if (!submitting) {
+              setCheckoutOpen(false);
+            }
+          }}
         >
           <div
             className="modal checkout-modal"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) =>
+              e.stopPropagation()
+            }
           >
             <button
               className="modal-close"
+              disabled={submitting}
               onClick={() =>
-
-                setCheckoutOpen(false)}
+                setCheckoutOpen(false)
+              }
             >
               <X />
             </button>
 
-            <div className="kicker">CHECKOUT</div>
+            <div className="kicker">
+              CHECKOUT
+            </div>
 
-            <h2>Where should we deliver?</h2>
+            <h2>
+              Where should we deliver?
+            </h2>
 
-            <p>
-              Your order total:{" "}
+            <p className="checkout-total">
+              Order total:{" "}
               <strong>{money(total)}</strong>
             </p>
 
-            {error && (
-              <div className="checkout-error">
-                {error}
+            {errorMessage && (
+              <div
+                style={{
+                  background: "#fff0f0",
+                  color: "#941219",
+                  border: "1px solid #f0caca",
+                  borderRadius: "10px",
+                  padding: "11px 13px",
+                  marginBottom: "15px",
+                  fontSize: "12px",
+                  lineHeight: 1.5
+                }}
+              >
+                {errorMessage}
               </div>
             )}
 
@@ -828,20 +900,77 @@ const items = useMemo(
                       })
                     }
                     placeholder="Enter your full delivery address"
-                    rows="3"
+                    rows={4}
                   />
                 </div>
               </label>
+
+              <div
+                style={{
+                  marginTop: "15px",
+                  padding: "13px",
+                  background: "#fff7f2",
+                  border: "1px solid #ead9d4",
+                  borderRadius: "12px"
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: "12px",
+                    marginBottom: "6px"
+                  }}
+                >
+                  <span>Subtotal</span>
+                  <strong>
+                    {money(subtotal)}
+                  </strong>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontSize: "12px",
+                    marginBottom: "6px"
+                  }}
+                >
+                  <span>Delivery</span>
+                  <strong>
+                    {money(deliveryFee)}
+                  </strong>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    fontWeight: "700",
+                    color: "#3e080b"
+                  }}
+                >
+                  <span>Total</span>
+                  <strong>
+                    {money(total)}
+                  </strong>
+                </div>
+              </div>
 
               <button
                 className="primary full"
                 type="submit"
                 disabled={submitting}
+                style={{
+                  opacity: submitting ? 0.7 : 1
+                }}
               >
                 {submitting
-                  ? "Placing order..."
+                  ? "Saving your order..."
                   : "Place order"}
-                {!submitting && <ArrowRight size={17} />}
+                {!submitting && (
+                  <CheckCircle2 size={17} />
+                )}
               </button>
             </form>
           </div>
@@ -850,20 +979,72 @@ const items = useMemo(
 
       {/* ORDER SUCCESS */}
       {orderComplete && (
-        <div className="overlay">
-          <div className="modal success-modal">
-            <div className="success-icon">
-              <CheckCircle2 size={42} />
+        <div
+          className="overlay"
+          onClick={() => {}}
+        >
+          <div
+            className="modal"
+            onClick={(e) =>
+              e.stopPropagation()
+            }
+            style={{
+              textAlign: "center"
+            }}
+          >
+            <div
+              className="modal-icon"
+              style={{
+                margin: "0 auto 15px"
+              }}
+            >
+              <CheckCircle2 size={27} />
             </div>
 
-            <div className="kicker">ORDER RECEIVED</div>
+            <div className="kicker">
+              ORDER RECEIVED
+            </div>
 
-            <h2>Thank you for your order!</h2>
+            <h2>
+              Thank you, {customer.name}!
+            </h2>
 
             <p>
-              Your order has been received successfully. We'll
-              prepare your food fresh and get it moving to you.
+              Your order has been received
+              successfully. We'll contact you on{" "}
+              <strong>{customer.phone}</strong>{" "}
+              to confirm delivery.
             </p>
+
+            <div
+              style={{
+                background: "#fff7f2",
+                border: "1px solid #ead9d4",
+                borderRadius: "12px",
+                padding: "14px",
+                margin: "18px 0"
+              }}
+            >
+              <span
+                style={{
+                  display: "block",
+                  color: "#866c69",
+                  fontSize: "11px",
+                  marginBottom: "4px"
+                }}
+              >
+                Order total
+              </span>
+
+              <strong
+                style={{
+                  fontSize: "22px",
+                  color: "#941219"
+                }}
+              >
+                {money(total)}
+              </strong>
+            </div>
 
             <button
               className="primary full"
@@ -881,8 +1062,12 @@ const items = useMemo(
 function Feature({ icon, title, text }) {
   return (
     <div className="feature">
-      <div className="feature-icon">{icon}</div>
+      <div className="feature-icon">
+        {icon}
+      </div>
+
       <h3>{title}</h3>
+
       <p>{text}</p>
     </div>
   );
@@ -892,10 +1077,14 @@ function Step({ n, title, text }) {
   return (
     <div className="step">
       <b>{n}</b>
+
       <h3>{title}</h3>
+
       <p>{text}</p>
     </div>
   );
 }
 
-createRoot(document.getElementById("root")).render(<App />);
+createRoot(
+  document.getElementById("root")
+).render(<App />);
