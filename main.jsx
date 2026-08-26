@@ -16,7 +16,6 @@ import {
   ArrowRight,
   Phone,
   Mail,
-  Home,
   CheckCircle2
 } from "lucide-react";
 import "./styles.css";
@@ -135,7 +134,13 @@ const MENU = [
   }
 ];
 
-const cats = ["All", "Rice & Swallow", "Soups", "Proteins", "Drinks"];
+const cats = [
+  "All",
+  "Rice & Swallow",
+  "Soups",
+  "Proteins",
+  "Drinks"
+];
 
 const money = (n) => "₦" + Number(n || 0).toLocaleString("en-NG");
 
@@ -146,10 +151,9 @@ function App() {
 
   const [drawer, setDrawer] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [accountOpen, setAccountOpen] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
+  const [orderError, setOrderError] = useState("");
 
   const [customer, setCustomer] = useState({
     name: "",
@@ -157,6 +161,8 @@ function App() {
     email: "",
     address: ""
   });
+
+  const [completedOrder, setCompletedOrder] = useState(null);
 
   const items = useMemo(
     () =>
@@ -172,15 +178,22 @@ function App() {
   );
 
   const count = cart.reduce((s, i) => s + i.qty, 0);
-  const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-  const deliveryFee = cart.length ? 500 : 0;
-  const total = subtotal + deliveryFee;
+
+  const subtotal = cart.reduce(
+    (s, i) => s + i.price * i.qty,
+    0
+  );
+
+  const delivery = cart.length ? 500 : 0;
+  const total = subtotal + delivery;
 
   function add(item) {
     setCart((current) =>
       current.some((x) => x.id === item.id)
         ? current.map((x) =>
-            x.id === item.id ? { ...x, qty: x.qty + 1 } : x
+            x.id === item.id
+              ? { ...x, qty: x.qty + 1 }
+              : x
           )
         : [...current, { ...item, qty: 1 }]
     );
@@ -192,7 +205,9 @@ function App() {
     setCart((current) =>
       current
         .map((x) =>
-          x.id === id ? { ...x, qty: x.qty + amount } : x
+          x.id === id
+            ? { ...x, qty: x.qty + amount }
+            : x
         )
         .filter((x) => x.qty > 0)
     );
@@ -204,70 +219,102 @@ function App() {
       return;
     }
 
+    setOrderError("");
     setDrawer(false);
-    setErrorMessage("");
     setCheckoutOpen(true);
   }
 
   async function placeOrder(e) {
     e.preventDefault();
 
+    if (!cart.length) {
+      setOrderError("Your cart is empty.");
+      return;
+    }
+
     if (
       !customer.name.trim() ||
       !customer.phone.trim() ||
       !customer.address.trim()
     ) {
-      setErrorMessage(
-        "Please enter your full name, phone number and delivery address."
+      setOrderError(
+        "Please fill in your name, phone number and delivery address."
       );
       return;
     }
 
     setSubmitting(true);
-    setErrorMessage("");
+    setOrderError("");
+
+    const orderItems = cart.map((item) => ({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      quantity: item.qty,
+      category: item.cat
+    }));
 
     const orderData = {
       customer_name: customer.name.trim(),
       customer_phone: customer.phone.trim(),
       customer_email: customer.email.trim() || null,
       delivery_address: customer.address.trim(),
-
-      items: cart.map((item) => ({
-        id: item.id,
-        name: item.name,
-        price: item.price,
-        quantity: item.qty
-      })),
-
+      items: orderItems,
       subtotal,
-      delivery_fee: deliveryFee,
+      delivery_fee: delivery,
       total
     };
 
     try {
-      const response = await fetch("/api/orders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(orderData)
-      });
+      /*
+       * If your backend is deployed separately,
+       * replace this with your backend URL.
+       *
+       * Example:
+       * const API_URL = "https://your-server.vercel.app";
+       */
+      const API_URL =
+        import.meta.env.VITE_API_URL || "";
 
-      const result = await response.json();
+      const response = await fetch(
+        `${API_URL}/api/orders`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(orderData)
+        }
+      );
 
-      if (!response.ok || !result.success) {
+      let result = null;
+
+      try {
+        result = await response.json();
+      } catch {
+        result = null;
+      }
+
+      if (!response.ok || !result?.success) {
         throw new Error(
-          result.message || "Unable to save your order."
+          result?.message ||
+            "Unable to place your order. Please try again."
         );
       }
+
+      setCompletedOrder({
+        ...orderData,
+        order: result.order
+      });
 
       setCheckoutOpen(false);
       setOrderComplete(true);
     } catch (error) {
       console.error("Order submission error:", error);
 
-      setErrorMessage(
-        "We couldn't save your order right now. Please try again."
+      setOrderError(
+        error.message ||
+          "Something went wrong while placing your order."
       );
     } finally {
       setSubmitting(false);
@@ -277,6 +324,8 @@ function App() {
   function finishOrder() {
     setCart([]);
     setOrderComplete(false);
+    setCompletedOrder(null);
+    setOrderError("");
 
     setCustomer({
       name: "",
@@ -288,6 +337,7 @@ function App() {
 
   return (
     <div className="app">
+      {/* NAVIGATION */}
       <header className="nav">
         <div className="nav-inner">
           <div
@@ -302,8 +352,13 @@ function App() {
             <div className="logo">Go</div>
 
             <div>
-              <div className="brand-name">Gbemiolofada</div>
-              <div className="brand-sub">FOODS</div>
+              <div className="brand-name">
+                Gbemiolofada
+              </div>
+
+              <div className="brand-sub">
+                FOODS
+              </div>
             </div>
           </div>
 
@@ -314,12 +369,11 @@ function App() {
           </div>
 
           <div className="nav-actions">
-            <button
-              className="icon-btn"
-              onClick={() => setAccountOpen(true)}
-            >
+            <button className="icon-btn">
               <User size={19} />
-              <span className="hide-sm">Account</span>
+              <span className="hide-sm">
+                Account
+              </span>
             </button>
 
             <button
@@ -327,6 +381,7 @@ function App() {
               onClick={() => setDrawer(true)}
             >
               <ShoppingBag size={18} />
+
               <span>Cart</span>
 
               {count > 0 && <b>{count}</b>}
@@ -336,10 +391,12 @@ function App() {
       </header>
 
       <main>
+        {/* HERO */}
         <section className="hero">
           <div className="hero-copy">
             <div className="eyebrow">
-              <span></span> AUTHENTIC NIGERIAN FLAVOUR
+              <span></span>
+              AUTHENTIC NIGERIAN FLAVOUR
             </div>
 
             <h1>
@@ -349,27 +406,37 @@ function App() {
             </h1>
 
             <p>
-              Comforting Nigerian meals, prepared fresh and
-              delivered to your door while they're still hot.
+              Comforting Nigerian meals, prepared fresh
+              and delivered to your door while they're
+              still hot.
             </p>
 
             <div className="hero-actions">
-              <a className="primary" href="#menu">
-                Order your meal <ArrowRight size={17} />
+              <a
+                className="primary"
+                href="#menu"
+              >
+                Order your meal
+                <ArrowRight size={17} />
               </a>
 
-              <a className="text-link" href="#how">
+              <a
+                className="text-link"
+                href="#how"
+              >
                 How it works
               </a>
             </div>
 
             <div className="trust">
               <span>
-                <ShieldCheck size={17} /> Freshly prepared
+                <ShieldCheck size={17} />
+                Freshly prepared
               </span>
 
               <span>
-                <Clock3 size={17} /> Fast delivery
+                <Clock3 size={17} />
+                Fast delivery
               </span>
             </div>
           </div>
@@ -382,18 +449,32 @@ function App() {
               />
 
               <div className="floating-card">
-                <div className="stars">★★★★★</div>
-                <strong>Loved by food lovers</strong>
-                <small>Freshness you can taste.</small>
+                <div className="stars">
+                  ★★★★★
+                </div>
+
+                <strong>
+                  Loved by food lovers
+                </strong>
+
+                <small>
+                  Freshness you can taste.
+                </small>
               </div>
             </div>
           </div>
         </section>
 
-        <section className="section" id="menu">
+        {/* MENU */}
+        <section
+          className="section"
+          id="menu"
+        >
           <div className="section-head">
             <div>
-              <div className="kicker">OUR MENU</div>
+              <div className="kicker">
+                OUR MENU
+              </div>
 
               <h2>
                 Something delicious
@@ -407,7 +488,9 @@ function App() {
 
               <input
                 value={q}
-                onChange={(e) => setQ(e.target.value)}
+                onChange={(e) =>
+                  setQ(e.target.value)
+                }
                 placeholder="Search meals..."
               />
             </div>
@@ -417,7 +500,9 @@ function App() {
             {cats.map((c) => (
               <button
                 className={
-                  cat === c ? "chip active" : "chip"
+                  cat === c
+                    ? "chip active"
+                    : "chip"
                 }
                 onClick={() => setCat(c)}
                 key={c}
@@ -456,6 +541,7 @@ function App() {
                 <div className="food-body">
                   <div className="food-meta">
                     <span>{item.cat}</span>
+
                     <strong>
                       {money(item.price)}
                     </strong>
@@ -469,7 +555,8 @@ function App() {
                     className="add-line"
                     onClick={() => add(item)}
                   >
-                    Add to order <Plus size={16} />
+                    Add to order
+                    <Plus size={16} />
                   </button>
                 </div>
               </article>
@@ -477,7 +564,11 @@ function App() {
           </div>
         </section>
 
-        <section className="why" id="why">
+        {/* WHY */}
+        <section
+          className="why"
+          id="why"
+        >
           <div className="section narrow">
             <div className="kicker">
               WHY GBEMIOLOFADA
@@ -511,12 +602,18 @@ function App() {
           </div>
         </section>
 
-        <section className="how section" id="how">
+        {/* HOW IT WORKS */}
+        <section
+          className="how section"
+          id="how"
+        >
           <div className="kicker">
             SIMPLE FROM START TO FINISH
           </div>
 
-          <h2>Order in three easy steps.</h2>
+          <h2>
+            Order in three easy steps.
+          </h2>
 
           <div className="steps">
             <Step
@@ -528,7 +625,7 @@ function App() {
             <Step
               n="02"
               title="Checkout securely"
-              text="Enter your delivery details and pay securely online."
+              text="Enter your delivery details and complete your order."
             />
 
             <Step
@@ -540,6 +637,7 @@ function App() {
         </section>
       </main>
 
+      {/* FOOTER */}
       <footer>
         <div className="footer-brand">
           <div className="logo">Go</div>
@@ -548,24 +646,33 @@ function App() {
             <div className="brand-name">
               Gbemiolofada
             </div>
-            <div className="brand-sub">FOODS</div>
+
+            <div className="brand-sub">
+              FOODS
+            </div>
           </div>
         </div>
 
-        <p>Good food, made with heart.</p>
+        <p>
+          Good food, made with heart.
+        </p>
 
         <small>
-          © 2026 Gbemiolofada Foods. All rights reserved.
+          © 2026 Gbemiolofada Foods. All rights
+          reserved.
         </small>
       </footer>
 
+      {/* MOBILE CART */}
       {count > 0 && (
         <button
           className="mobile-cart"
           onClick={() => setDrawer(true)}
         >
           <span>
-            <ShoppingBag size={18} /> {count} item
+            <ShoppingBag size={18} />
+
+            {count} item
             {count > 1 ? "s" : ""}
           </span>
 
@@ -584,7 +691,9 @@ function App() {
         >
           <aside
             className="drawer"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) =>
+              e.stopPropagation()
+            }
           >
             <div className="drawer-head">
               <div>
@@ -592,11 +701,15 @@ function App() {
                   YOUR ORDER
                 </div>
 
-                <h2>Ready to eat?</h2>
+                <h2>
+                  Ready to eat?
+                </h2>
               </div>
 
               <button
-                onClick={() => setDrawer(false)}
+                onClick={() =>
+                  setDrawer(false)
+                }
               >
                 <X />
               </button>
@@ -606,7 +719,9 @@ function App() {
               <div className="empty">
                 <ShoppingBag size={40} />
 
-                <p>Your basket is waiting.</p>
+                <p>
+                  Your basket is waiting.
+                </p>
 
                 <button
                   className="primary"
@@ -631,7 +746,9 @@ function App() {
                       />
 
                       <div className="ci-main">
-                        <strong>{i.name}</strong>
+                        <strong>
+                          {i.name}
+                        </strong>
 
                         <span>
                           {money(i.price)}
@@ -640,7 +757,10 @@ function App() {
                         <div className="qty">
                           <button
                             onClick={() =>
-                              change(i.id, -1)
+                              change(
+                                i.id,
+                                -1
+                              )
                             }
                           >
                             <Minus size={14} />
@@ -650,7 +770,10 @@ function App() {
 
                           <button
                             onClick={() =>
-                              change(i.id, 1)
+                              change(
+                                i.id,
+                                1
+                              )
                             }
                           >
                             <Plus size={14} />
@@ -663,21 +786,30 @@ function App() {
 
                 <div className="checkout">
                   <div>
-                    <span>Subtotal</span>
+                    <span>
+                      Subtotal
+                    </span>
+
                     <strong>
                       {money(subtotal)}
                     </strong>
                   </div>
 
                   <div>
-                    <span>Delivery</span>
+                    <span>
+                      Delivery
+                    </span>
+
                     <strong>
-                      {money(deliveryFee)}
+                      {money(delivery)}
                     </strong>
                   </div>
 
                   <div className="total">
-                    <span>Total</span>
+                    <span>
+                      Total
+                    </span>
+
                     <strong>
                       {money(total)}
                     </strong>
@@ -685,15 +817,18 @@ function App() {
 
                   <button
                     className="primary full"
-                    onClick={startCheckout}
+                    onClick={
+                      startCheckout
+                    }
                   >
                     Continue to checkout
                     <ArrowRight size={17} />
                   </button>
 
                   <small>
-                    Secure checkout · Your order
-                    details are kept private.
+                    Secure checkout · Your
+                    order details are kept
+                    private.
                   </small>
                 </div>
               </>
@@ -702,79 +837,14 @@ function App() {
         </div>
       )}
 
-      {/* ACCOUNT */}
-      {accountOpen && (
-        <div
-          className="overlay"
-          onClick={() => setAccountOpen(false)}
-        >
-          <div
-            className="modal"
-            onClick={(e) =>
-              e.stopPropagation()
-            }
-          >
-            <button
-              className="modal-close"
-              onClick={() =>
-                setAccountOpen(false)
-              }
-            >
-              <X />
-            </button>
-
-            <div className="modal-icon">
-              <User size={25} />
-            </div>
-
-            <div className="kicker">
-              YOUR ACCOUNT
-            </div>
-
-            <h2>
-              Welcome to Gbemiolofada Foods
-            </h2>
-
-            <p>
-              Sign in to save your details, view
-              your orders and make future checkout
-              faster.
-            </p>
-
-            <button
-              className="primary full"
-              onClick={() =>
-                alert(
-                  "Account sign-in will be connected next."
-                )
-              }
-            >
-              Sign in
-            </button>
-
-            <button
-              className="secondary full"
-              onClick={() =>
-                alert(
-                  "Account registration will be connected next."
-                )
-              }
-            >
-              Create an account
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* CHECKOUT */}
+      {/* CHECKOUT MODAL */}
       {checkoutOpen && (
         <div
           className="overlay"
-          onClick={() => {
-            if (!submitting) {
-              setCheckoutOpen(false);
-            }
-          }}
+          onClick={() =>
+            !submitting &&
+            setCheckoutOpen(false)
+          }
         >
           <div
             className="modal checkout-modal"
@@ -802,27 +872,31 @@ function App() {
 
             <p className="checkout-total">
               Order total:{" "}
-              <strong>{money(total)}</strong>
+              <strong>
+                {money(total)}
+              </strong>
             </p>
 
-            {errorMessage && (
+            {orderError && (
               <div
                 style={{
                   background: "#fff0f0",
                   color: "#941219",
-                  border: "1px solid #f0caca",
+                  border:
+                    "1px solid #f0caca",
+                  padding: "12px",
                   borderRadius: "10px",
-                  padding: "11px 13px",
-                  marginBottom: "15px",
                   fontSize: "12px",
-                  lineHeight: 1.5
+                  marginBottom: "15px"
                 }}
               >
-                {errorMessage}
+                {orderError}
               </div>
             )}
 
-            <form onSubmit={placeOrder}>
+            <form
+              onSubmit={placeOrder}
+            >
               <label>
                 Full name
 
@@ -831,11 +905,14 @@ function App() {
 
                   <input
                     required
-                    value={customer.name}
+                    value={
+                      customer.name
+                    }
                     onChange={(e) =>
                       setCustomer({
                         ...customer,
-                        name: e.target.value
+                        name: e.target
+                          .value
                       })
                     }
                     placeholder="Your full name"
@@ -851,12 +928,14 @@ function App() {
 
                   <input
                     required
-                    type="tel"
-                    value={customer.phone}
+                    value={
+                      customer.phone
+                    }
                     onChange={(e) =>
                       setCustomer({
                         ...customer,
-                        phone: e.target.value
+                        phone: e.target
+                          .value
                       })
                     }
                     placeholder="080..."
@@ -872,11 +951,14 @@ function App() {
 
                   <input
                     type="email"
-                    value={customer.email}
+                    value={
+                      customer.email
+                    }
                     onChange={(e) =>
                       setCustomer({
                         ...customer,
-                        email: e.target.value
+                        email: e.target
+                          .value
                       })
                     }
                     placeholder="you@example.com"
@@ -888,15 +970,18 @@ function App() {
                 Delivery address
 
                 <div className="input-wrap">
-                  <Home size={17} />
+                  <MapPin size={17} />
 
                   <textarea
                     required
-                    value={customer.address}
+                    value={
+                      customer.address
+                    }
                     onChange={(e) =>
                       setCustomer({
                         ...customer,
-                        address: e.target.value
+                        address:
+                          e.target.value
                       })
                     }
                     placeholder="Enter your full delivery address"
@@ -905,161 +990,250 @@ function App() {
                 </div>
               </label>
 
+              <button
+                className="primary full"
+                type="submit"
+                disabled={submitting}
+                style={{
+                  opacity: submitting
+                    ? 0.7
+                    : 1
+                }}
+              >
+                {submitting
+                  ? "Placing order..."
+                  : "Place order"}
+
+                {!submitting && (
+                  <ArrowRight size={17} />
+                )}
+              </button>
+            </form>
+
+            <small
+              style={{
+                display: "block",
+                textAlign: "center",
+                marginTop: "10px",
+                color: "#866c69",
+                fontSize: "10px"
+              }}
+            >
+              Your information is securely
+              submitted with your order.
+            </small>
+          </div>
+        </div>
+      )}
+
+      {/* ORDER SUCCESS */}
+      {orderComplete &&
+        completedOrder && (
+          <div
+            className="overlay"
+            onClick={() => {}}
+          >
+            <div
+              className="modal"
+              onClick={(e) =>
+                e.stopPropagation()
+              }
+              style={{
+                textAlign: "center"
+              }}
+            >
               <div
                 style={{
-                  marginTop: "15px",
-                  padding: "13px",
-                  background: "#fff7f2",
-                  border: "1px solid #ead9d4",
-                  borderRadius: "12px"
+                  width: "58px",
+                  height: "58px",
+                  borderRadius: "50%",
+                  background: "#eef8ef",
+                  color: "#23823b",
+                  display: "grid",
+                  placeItems: "center",
+                  margin:
+                    "0 auto 18px"
+                }}
+              >
+                <CheckCircle2
+                  size={32}
+                />
+              </div>
+
+              <div className="kicker">
+                ORDER RECEIVED
+              </div>
+
+              <h2>
+                Thank you,{" "}
+                {completedOrder
+                  .customer_name
+                  .split(" ")[0]}
+                !
+              </h2>
+
+              <p>
+                Your order has been
+                received successfully.
+                We'll contact you on{" "}
+                <strong>
+                  {
+                    completedOrder.customer_phone
+                  }
+                </strong>{" "}
+                to confirm delivery.
+              </p>
+
+              <div
+                style={{
+                  background:
+                    "var(--cream)",
+                  borderRadius: "12px",
+                  padding: "15px",
+                  margin:
+                    "18px 0",
+                  textAlign: "left",
+                  fontSize: "12px"
                 }}
               >
                 <div
                   style={{
                     display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: "12px",
-                    marginBottom: "6px"
+                    justifyContent:
+                      "space-between",
+                    marginBottom:
+                      "8px"
                   }}
                 >
-                  <span>Subtotal</span>
+                  <span>
+                    Customer
+                  </span>
+
                   <strong>
-                    {money(subtotal)}
+                    {
+                      completedOrder.customer_name
+                    }
                   </strong>
                 </div>
 
                 <div
                   style={{
                     display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: "12px",
-                    marginBottom: "6px"
+                    justifyContent:
+                      "space-between",
+                    marginBottom:
+                      "8px"
                   }}
                 >
-                  <span>Delivery</span>
+                  <span>
+                    Phone
+                  </span>
+
                   <strong>
-                    {money(deliveryFee)}
+                    {
+                      completedOrder.customer_phone
+                    }
+                  </strong>
+                </div>
+
+                {completedOrder.customer_email && (
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent:
+                        "space-between",
+                      marginBottom:
+                        "8px"
+                    }}
+                  >
+                    <span>
+                      Email
+                    </span>
+
+                    <strong>
+                      {
+                        completedOrder.customer_email
+                      }
+                    </strong>
+                  </div>
+                )}
+
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent:
+                      "space-between",
+                    gap: "15px",
+                    marginBottom:
+                      "8px"
+                  }}
+                >
+                  <span>
+                    Delivery
+                  </span>
+
+                  <strong
+                    style={{
+                      textAlign:
+                        "right"
+                    }}
+                  >
+                    {
+                      completedOrder.delivery_address
+                    }
                   </strong>
                 </div>
 
                 <div
                   style={{
                     display: "flex",
-                    justifyContent: "space-between",
-                    fontWeight: "700",
-                    color: "#3e080b"
+                    justifyContent:
+                      "space-between",
+                    borderTop:
+                      "1px solid var(--line)",
+                    paddingTop:
+                      "10px",
+                    marginTop:
+                      "10px"
                   }}
                 >
-                  <span>Total</span>
-                  <strong>
-                    {money(total)}
+                  <span>
+                    Order total
+                  </span>
+
+                  <strong
+                    style={{
+                      color:
+                        "var(--red)"
+                    }}
+                  >
+                    {money(
+                      completedOrder.total
+                    )}
                   </strong>
                 </div>
               </div>
 
               <button
                 className="primary full"
-                type="submit"
-                disabled={submitting}
-                style={{
-                  opacity: submitting ? 0.7 : 1
-                }}
+                onClick={
+                  finishOrder
+                }
               >
-                {submitting
-                  ? "Saving your order..."
-                  : "Place order"}
-                {!submitting && (
-                  <CheckCircle2 size={17} />
-                )}
+                Done
               </button>
-            </form>
+            </div>
           </div>
-        </div>
-      )}
-
-      {/* ORDER SUCCESS */}
-      {orderComplete && (
-        <div
-          className="overlay"
-          onClick={() => {}}
-        >
-          <div
-            className="modal"
-            onClick={(e) =>
-              e.stopPropagation()
-            }
-            style={{
-              textAlign: "center"
-            }}
-          >
-            <div
-              className="modal-icon"
-              style={{
-                margin: "0 auto 15px"
-              }}
-            >
-              <CheckCircle2 size={27} />
-            </div>
-
-            <div className="kicker">
-              ORDER RECEIVED
-            </div>
-
-            <h2>
-              Thank you, {customer.name}!
-            </h2>
-
-            <p>
-              Your order has been received
-              successfully. We'll contact you on{" "}
-              <strong>{customer.phone}</strong>{" "}
-              to confirm delivery.
-            </p>
-
-            <div
-              style={{
-                background: "#fff7f2",
-                border: "1px solid #ead9d4",
-                borderRadius: "12px",
-                padding: "14px",
-                margin: "18px 0"
-              }}
-            >
-              <span
-                style={{
-                  display: "block",
-                  color: "#866c69",
-                  fontSize: "11px",
-                  marginBottom: "4px"
-                }}
-              >
-                Order total
-              </span>
-
-              <strong
-                style={{
-                  fontSize: "22px",
-                  color: "#941219"
-                }}
-              >
-                {money(total)}
-              </strong>
-            </div>
-
-            <button
-              className="primary full"
-              onClick={finishOrder}
-            >
-              Done
-            </button>
-          </div>
-        </div>
-      )}
+        )}
     </div>
   );
 }
 
-function Feature({ icon, title, text }) {
+function Feature({
+  icon,
+  title,
+  text
+}) {
   return (
     <div className="feature">
       <div className="feature-icon">
@@ -1073,7 +1247,11 @@ function Feature({ icon, title, text }) {
   );
 }
 
-function Step({ n, title, text }) {
+function Step({
+  n,
+  title,
+  text
+}) {
   return (
     <div className="step">
       <b>{n}</b>
