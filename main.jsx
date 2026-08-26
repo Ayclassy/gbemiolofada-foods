@@ -17,7 +17,7 @@ import {
   CheckCircle2,
   Phone,
   Mail,
-  Home
+  Home,
 } from "lucide-react";
 import "./styles.css";
 
@@ -30,7 +30,7 @@ const MENU = [
     desc: "Smoky party-style jollof with rich tomato pepper sauce.",
     tag: "Bestseller",
     image:
-      "https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=900&q=85"
+      "https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=900&q=85",
   },
   {
     id: "fried",
@@ -39,7 +39,7 @@ const MENU = [
     price: 3500,
     desc: "Fragrant fried rice with vegetables, liver and house seasoning.",
     image:
-      "https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=900&q=85"
+      "https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=900&q=85",
   },
   {
     id: "yam",
@@ -48,7 +48,7 @@ const MENU = [
     price: 2000,
     desc: "Smooth, warm pounded yam — perfect with your favourite soup.",
     image:
-      "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=900&q=85"
+      "https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=900&q=85",
   },
   {
     id: "egusi",
@@ -58,7 +58,7 @@ const MENU = [
     desc: "Melon-seed soup with leafy greens and assorted meat.",
     tag: "Chef's pick",
     image:
-      "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=900&q=85"
+      "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=900&q=85",
   },
   {
     id: "efo",
@@ -67,7 +67,7 @@ const MENU = [
     price: 3200,
     desc: "Rich leafy stew finished with palm oil and smoked fish.",
     image:
-      "https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=900&q=85"
+      "https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?auto=format&fit=crop&w=900&q=85",
   },
   {
     id: "pepper",
@@ -77,7 +77,7 @@ const MENU = [
     desc: "Aromatic, warming pepper soup with tender goat meat.",
     tag: "Popular",
     image:
-      "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=900&q=85"
+      "https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=900&q=85",
   },
   {
     id: "chicken",
@@ -86,7 +86,7 @@ const MENU = [
     price: 2500,
     desc: "Juicy char-grilled chicken with a house pepper glaze.",
     image:
-      "https://images.unsplash.com/photo-1532550907401-a500c9a57435?auto=format&fit=crop&w=900&q=85"
+      "https://images.unsplash.com/photo-1532550907401-a500c9a57435?auto=format&fit=crop&w=900&q=85",
   },
   {
     id: "beef",
@@ -95,7 +95,7 @@ const MENU = [
     price: 2200,
     desc: "Tender beef tossed in a bold onion-pepper sauce.",
     image:
-      "https://images.unsplash.com/photo-1603360946369-dc9bb6258143?auto=format&fit=crop&w=900&q=85"
+      "https://images.unsplash.com/photo-1603360946369-dc9bb6258143?auto=format&fit=crop&w=900&q=85",
   },
   {
     id: "fish",
@@ -104,7 +104,7 @@ const MENU = [
     price: 3000,
     desc: "Crispy fried croaker served with our signature pepper sauce.",
     image:
-      "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=900&q=85"
+      "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=900&q=85",
   },
   {
     id: "zobo",
@@ -113,7 +113,7 @@ const MENU = [
     price: 800,
     desc: "Hibiscus, ginger and pineapple-cucumber infusion.",
     image:
-      "https://images.unsplash.com/photo-1544145945-f90425340c7e?auto=format&fit=crop&w=900&q=85"
+      "https://images.unsplash.com/photo-1544145945-f90425340c7e?auto=format&fit=crop&w=900&q=85",
   },
   {
     id: "chapman",
@@ -122,7 +122,7 @@ const MENU = [
     price: 1200,
     desc: "Cold, refreshing house-mixed Chapman.",
     image:
-      "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=900&q=85"
+      "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=900&q=85",
   },
   {
     id: "water",
@@ -131,8 +131,8 @@ const MENU = [
     price: 300,
     desc: "50cl chilled bottled water.",
     image:
-      "https://images.unsplash.com/photo-1564419320461-6870880221ad?auto=format&fit=crop&w=900&q=85"
-  }
+      "https://images.unsplash.com/photo-1564419320461-6870880221ad?auto=format&fit=crop&w=900&q=85",
+  },
 ];
 
 const cats = [
@@ -140,21 +140,11 @@ const cats = [
   "Rice & Swallow",
   "Soups",
   "Proteins",
-  "Drinks"
+  "Drinks",
 ];
 
-const money = (n) => "₦" + Number(n || 0).toLocaleString("en-NG");
-
-/*
-  IMPORTANT:
-  If your Express server is deployed separately, put its URL in Vercel as:
-
-  VITE_API_URL = https://YOUR-BACKEND-URL.vercel.app
-
-  The code below will then send orders to:
-
-  https://YOUR-BACKEND-URL.vercel.app/api/orders
-*/
+const money = (n) =>
+  "₦" + Number(n || 0).toLocaleString("en-NG");
 
 const API_URL = (
   import.meta.env.VITE_API_URL || ""
@@ -170,31 +160,38 @@ function App() {
   const [orderComplete, setOrderComplete] = useState(false);
   const [savingOrder, setSavingOrder] = useState(false);
   const [orderError, setOrderError] = useState("");
+  const [orderNumber, setOrderNumber] = useState("");
 
   const [customer, setCustomer] = useState({
     name: "",
     phone: "",
     email: "",
-    address: ""
+    address: "",
   });
 
-  const items = useMemo(
-    () =>
-      MENU.filter(
-        (m) =>
-          (cat === "All" || m.cat === cat) &&
-          (!q ||
-            `${m.name} ${m.desc}`
-              .toLowerCase()
-              .includes(q.toLowerCase()))
-      ),
-    [cat, q]
+  const items = useMemo(() => {
+    return MENU.filter((m) => {
+      const matchesCategory =
+        cat === "All" || m.cat === cat;
+
+      const searchText =
+        `${m.name} ${m.desc}`.toLowerCase();
+
+      const matchesSearch =
+        !q ||
+        searchText.includes(q.toLowerCase());
+
+      return matchesCategory && matchesSearch;
+    });
+  }, [cat, q]);
+
+  const count = cart.reduce(
+    (sum, item) => sum + item.qty,
+    0
   );
 
-  const count = cart.reduce((s, i) => s + i.qty, 0);
-
   const subtotal = cart.reduce(
-    (s, i) => s + i.price * i.qty,
+    (sum, item) => sum + item.price * item.qty,
     0
   );
 
@@ -202,15 +199,27 @@ function App() {
   const total = subtotal + delivery;
 
   function add(item) {
-    setCart((current) =>
-      current.some((x) => x.id === item.id)
-        ? current.map((x) =>
-            x.id === item.id
-              ? { ...x, qty: x.qty + 1 }
-              : x
-          )
-        : [...current, { ...item, qty: 1 }]
-    );
+    setCart((current) => {
+      const exists = current.some(
+        (x) => x.id === item.id
+      );
+
+      if (exists) {
+        return current.map((x) =>
+          x.id === item.id
+            ? { ...x, qty: x.qty + 1 }
+            : x
+        );
+      }
+
+      return [
+        ...current,
+        {
+          ...item,
+          qty: 1,
+        },
+      ];
+    });
 
     setDrawer(true);
   }
@@ -218,12 +227,15 @@ function App() {
   function change(id, amount) {
     setCart((current) =>
       current
-        .map((x) =>
-          x.id === id
-            ? { ...x, qty: x.qty + amount }
-            : x
+        .map((item) =>
+          item.id === id
+            ? {
+                ...item,
+                qty: item.qty + amount,
+              }
+            : item
         )
-        .filter((x) => x.qty > 0)
+        .filter((item) => item.qty > 0)
     );
   }
 
@@ -238,10 +250,17 @@ function App() {
     setCheckoutOpen(true);
   }
 
-  async function placeOrder(e) {
-    e.preventDefault();
+  async function placeOrder(event) {
+    event.preventDefault();
 
     setOrderError("");
+
+    if (!API_URL) {
+      setOrderError(
+        "The order server is not connected yet. Please try again later."
+      );
+      return;
+    }
 
     if (!customer.name.trim()) {
       setOrderError("Please enter your full name.");
@@ -254,7 +273,9 @@ function App() {
     }
 
     if (!customer.address.trim()) {
-      setOrderError("Please enter your delivery address.");
+      setOrderError(
+        "Please enter your delivery address."
+      );
       return;
     }
 
@@ -265,70 +286,74 @@ function App() {
 
     setSavingOrder(true);
 
-    /*
-      This is the important part.
-
-      We are now actually sending the customer's:
-      - name
-      - phone
-      - email
-      - delivery address
-      - ordered items
-      - subtotal
-      - delivery fee
-      - total
-
-      to your Express server.
-    */
-
     try {
       const response = await fetch(
         `${API_URL}/api/orders`,
         {
           method: "POST",
           headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             customer_name: customer.name.trim(),
             customer_phone: customer.phone.trim(),
             customer_email:
               customer.email.trim() || null,
-            delivery_address: customer.address.trim(),
+            delivery_address:
+              customer.address.trim(),
 
             items: cart.map((item) => ({
               id: item.id,
               name: item.name,
               category: item.cat,
               price: item.price,
-              quantity: item.qty
+              quantity: item.qty,
             })),
 
             subtotal,
             delivery_fee: delivery,
-            total
-          })
+            total,
+          }),
         }
       );
 
-      const data = await response.json();
+      let data;
 
-      if (!response.ok || !data.success) {
+      try {
+        data = await response.json();
+      } catch {
         throw new Error(
-          data.message || "Unable to save your order."
+          "The server returned an invalid response."
         );
       }
 
-      console.log("ORDER SAVED:", data.order);
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.message ||
+            "Unable to save your order."
+        );
+      }
+
+      console.log(
+        "Order successfully saved:",
+        data.order
+      );
+
+      if (data.order?.id) {
+        setOrderNumber(data.order.id);
+      }
 
       setCheckoutOpen(false);
       setOrderComplete(true);
     } catch (error) {
-      console.error("ORDER SUBMISSION ERROR:", error);
+      console.error(
+        "Order submission error:",
+        error
+      );
 
       setOrderError(
         error.message ||
-          "We could not send your order. Please try again."
+          "We could not submit your order. Please try again."
       );
     } finally {
       setSavingOrder(false);
@@ -338,28 +363,28 @@ function App() {
   function finishOrder() {
     setCart([]);
     setOrderComplete(false);
+    setOrderNumber("");
 
     setCustomer({
       name: "",
       phone: "",
       email: "",
-      address: ""
+      address: "",
     });
   }
 
   return (
     <div className="app">
-
       {/* NAVIGATION */}
+
       <header className="nav">
         <div className="nav-inner">
-
           <div
             className="brand"
             onClick={() =>
               window.scrollTo({
                 top: 0,
-                behavior: "smooth"
+                behavior: "smooth",
               })
             }
           >
@@ -383,8 +408,12 @@ function App() {
           </div>
 
           <div className="nav-actions">
-            <button className="icon-btn">
+            <button
+              className="icon-btn"
+              type="button"
+            >
               <User size={19} />
+
               <span className="hide-sm">
                 Account
               </span>
@@ -392,6 +421,7 @@ function App() {
 
             <button
               className="cart-btn"
+              type="button"
               onClick={() => setDrawer(true)}
             >
               <ShoppingBag size={18} />
@@ -401,17 +431,14 @@ function App() {
               {count > 0 && <b>{count}</b>}
             </button>
           </div>
-
         </div>
       </header>
 
       <main>
-
         {/* HERO */}
+
         <section className="hero">
-
           <div className="hero-copy">
-
             <div className="eyebrow">
               <span></span>
               AUTHENTIC NIGERIAN FLAVOUR
@@ -424,13 +451,12 @@ function App() {
             </h1>
 
             <p>
-              Comforting Nigerian meals, prepared fresh
-              and delivered to your door while they're
-              still hot.
+              Comforting Nigerian meals, prepared
+              fresh and delivered to your door while
+              they're still hot.
             </p>
 
             <div className="hero-actions">
-
               <a
                 className="primary"
                 href="#menu"
@@ -445,11 +471,9 @@ function App() {
               >
                 How it works
               </a>
-
             </div>
 
             <div className="trust">
-
               <span>
                 <ShieldCheck size={17} />
                 Freshly prepared
@@ -459,22 +483,17 @@ function App() {
                 <Clock3 size={17} />
                 Fast delivery
               </span>
-
             </div>
-
           </div>
 
           <div className="hero-visual">
-
             <div className="hero-card">
-
               <img
                 src={MENU[0].image}
                 alt="Jollof rice"
               />
 
               <div className="floating-card">
-
                 <div className="stars">
                   ★★★★★
                 </div>
@@ -486,25 +505,19 @@ function App() {
                 <small>
                   Freshness you can taste.
                 </small>
-
               </div>
-
             </div>
-
           </div>
-
         </section>
 
         {/* MENU */}
+
         <section
           className="section"
           id="menu"
         >
-
           <div className="section-head">
-
             <div>
-
               <div className="kicker">
                 OUR MENU
               </div>
@@ -514,11 +527,9 @@ function App() {
                 <br />
                 <em>for everyone.</em>
               </h2>
-
             </div>
 
             <div className="search">
-
               <Search size={18} />
 
               <input
@@ -528,15 +539,13 @@ function App() {
                 }
                 placeholder="Search meals..."
               />
-
             </div>
-
           </div>
 
           <div className="chips">
-
             {cats.map((c) => (
               <button
+                type="button"
                 className={
                   cat === c
                     ? "chip active"
@@ -548,20 +557,15 @@ function App() {
                 {c}
               </button>
             ))}
-
           </div>
 
           <div className="grid">
-
             {items.map((item) => (
-
               <article
                 className="food-card"
                 key={item.id}
               >
-
                 <div className="food-img">
-
                   <img
                     src={item.image}
                     alt={item.name}
@@ -574,18 +578,17 @@ function App() {
                   )}
 
                   <button
+                    type="button"
                     className="add-round"
                     onClick={() => add(item)}
+                    aria-label={`Add ${item.name} to order`}
                   >
                     <Plus size={20} />
                   </button>
-
                 </div>
 
                 <div className="food-body">
-
                   <div className="food-meta">
-
                     <span>
                       {item.cat}
                     </span>
@@ -593,43 +596,33 @@ function App() {
                     <strong>
                       {money(item.price)}
                     </strong>
-
                   </div>
 
-                  <h3>
-                    {item.name}
-                  </h3>
+                  <h3>{item.name}</h3>
 
-                  <p>
-                    {item.desc}
-                  </p>
+                  <p>{item.desc}</p>
 
                   <button
+                    type="button"
                     className="add-line"
                     onClick={() => add(item)}
                   >
                     Add to order
                     <Plus size={16} />
                   </button>
-
                 </div>
-
               </article>
-
             ))}
-
           </div>
-
         </section>
 
         {/* WHY */}
+
         <section
           className="why"
           id="why"
         >
-
           <div className="section narrow">
-
             <div className="kicker">
               WHY GBEMIOLOFADA
             </div>
@@ -641,7 +634,6 @@ function App() {
             </h2>
 
             <div className="feature-grid">
-
               <Feature
                 icon={<Flame />}
                 title="Made fresh"
@@ -659,19 +651,16 @@ function App() {
                 title="Delivered with care"
                 text="From our kitchen to your doorstep, every order is handled with care."
               />
-
             </div>
-
           </div>
-
         </section>
 
         {/* HOW IT WORKS */}
+
         <section
           className="how section"
           id="how"
         >
-
           <div className="kicker">
             SIMPLE FROM START TO FINISH
           </div>
@@ -681,7 +670,6 @@ function App() {
           </h2>
 
           <div className="steps">
-
             <Step
               n="01"
               title="Choose your meal"
@@ -699,18 +687,14 @@ function App() {
               title="Enjoy your food"
               text="We prepare it fresh and get it moving to you."
             />
-
           </div>
-
         </section>
-
       </main>
 
       {/* FOOTER */}
+
       <footer>
-
         <div className="footer-brand">
-
           <div className="logo">
             Go
           </div>
@@ -724,7 +708,6 @@ function App() {
               FOODS
             </div>
           </div>
-
         </div>
 
         <p>
@@ -735,57 +718,45 @@ function App() {
           © 2026 Gbemiolofada Foods.
           All rights reserved.
         </small>
-
       </footer>
 
       {/* MOBILE CART */}
-      {count > 0 && (
 
+      {count > 0 && (
         <button
+          type="button"
           className="mobile-cart"
           onClick={() => setDrawer(true)}
         >
-
           <span>
-
             <ShoppingBag size={18} />
 
             {count} item
             {count > 1 ? "s" : ""}
-
           </span>
 
           <strong>
-
             {money(subtotal)}
-
             <ChevronRight size={18} />
-
           </strong>
-
         </button>
-
       )}
 
       {/* CART DRAWER */}
-      {drawer && (
 
+      {drawer && (
         <div
           className="overlay"
           onClick={() => setDrawer(false)}
         >
-
           <aside
             className="drawer"
             onClick={(e) =>
               e.stopPropagation()
             }
           >
-
             <div className="drawer-head">
-
               <div>
-
                 <div className="kicker">
                   YOUR ORDER
                 </div>
@@ -793,23 +764,21 @@ function App() {
                 <h2>
                   Ready to eat?
                 </h2>
-
               </div>
 
               <button
+                type="button"
                 onClick={() =>
                   setDrawer(false)
                 }
+                aria-label="Close cart"
               >
                 <X />
               </button>
-
             </div>
 
             {cart.length === 0 ? (
-
               <div className="empty">
-
                 <ShoppingBag size={40} />
 
                 <p>
@@ -817,6 +786,7 @@ function App() {
                 </p>
 
                 <button
+                  type="button"
                   className="primary"
                   onClick={() =>
                     setDrawer(false)
@@ -824,71 +794,64 @@ function App() {
                 >
                   Browse menu
                 </button>
-
               </div>
-
             ) : (
-
               <>
-
                 <div className="cart-items">
-
-                  {cart.map((i) => (
-
+                  {cart.map((item) => (
                     <div
                       className="cart-item"
-                      key={i.id}
+                      key={item.id}
                     >
-
                       <img
-                        src={i.image}
-                        alt={i.name}
+                        src={item.image}
+                        alt={item.name}
                       />
 
                       <div className="ci-main">
-
                         <strong>
-                          {i.name}
+                          {item.name}
                         </strong>
 
                         <span>
-                          {money(i.price)}
+                          {money(item.price)}
                         </span>
 
                         <div className="qty">
-
                           <button
+                            type="button"
                             onClick={() =>
-                              change(i.id, -1)
+                              change(
+                                item.id,
+                                -1
+                              )
                             }
                           >
                             <Minus size={14} />
                           </button>
 
                           <b>
-                            {i.qty}
+                            {item.qty}
                           </b>
 
                           <button
+                            type="button"
                             onClick={() =>
-                              change(i.id, 1)
+                              change(
+                                item.id,
+                                1
+                              )
                             }
                           >
                             <Plus size={14} />
                           </button>
-
                         </div>
-
                       </div>
-
                     </div>
-
                   ))}
-
                 </div>
 
                 <div className="checkout">
-
                   <div>
                     <span>
                       Subtotal
@@ -910,7 +873,6 @@ function App() {
                   </div>
 
                   <div className="total">
-
                     <span>
                       Total
                     </span>
@@ -918,10 +880,10 @@ function App() {
                     <strong>
                       {money(total)}
                     </strong>
-
                   </div>
 
                   <button
+                    type="button"
                     className="primary full"
                     onClick={openCheckout}
                   >
@@ -930,25 +892,20 @@ function App() {
                   </button>
 
                   <small>
-                    Secure checkout · Your order
-                    details are kept private.
+                    Secure checkout · Your
+                    order details are kept
+                    private.
                   </small>
-
                 </div>
-
               </>
-
             )}
-
           </aside>
-
         </div>
-
       )}
 
-      {/* CHECKOUT MODAL */}
-      {checkoutOpen && (
+      {/* CHECKOUT */}
 
+      {checkoutOpen && (
         <div
           className="overlay"
           onClick={() => {
@@ -957,25 +914,23 @@ function App() {
             }
           }}
         >
-
           <div
             className="modal checkout-modal"
             onClick={(e) =>
               e.stopPropagation()
             }
           >
-
             {!savingOrder && (
-
               <button
+                type="button"
                 className="modal-close"
                 onClick={() =>
                   setCheckoutOpen(false)
                 }
+                aria-label="Close checkout"
               >
                 <X />
               </button>
-
             )}
 
             <div className="kicker">
@@ -994,7 +949,6 @@ function App() {
             </p>
 
             {orderError && (
-
               <div
                 style={{
                   background: "#fff0f0",
@@ -1003,70 +957,60 @@ function App() {
                   padding: "12px",
                   borderRadius: "10px",
                   marginBottom: "15px",
-                  fontSize: "13px"
+                  fontSize: "13px",
                 }}
               >
                 {orderError}
               </div>
-
             )}
 
             <form onSubmit={placeOrder}>
-
               <label>
-
                 Full name
 
                 <div className="input-wrap">
-
                   <User size={17} />
 
                   <input
+                    type="text"
                     required
                     value={customer.name}
                     onChange={(e) =>
                       setCustomer({
                         ...customer,
-                        name: e.target.value
+                        name: e.target.value,
                       })
                     }
                     placeholder="Your full name"
                   />
-
                 </div>
-
               </label>
 
               <label>
-
                 Phone number
 
                 <div className="input-wrap">
-
                   <Phone size={17} />
 
                   <input
+                    type="tel"
                     required
                     value={customer.phone}
                     onChange={(e) =>
                       setCustomer({
                         ...customer,
-                        phone: e.target.value
+                        phone: e.target.value,
                       })
                     }
                     placeholder="080..."
                   />
-
                 </div>
-
               </label>
 
               <label>
-
                 Email address
 
                 <div className="input-wrap">
-
                   <Mail size={17} />
 
                   <input
@@ -1075,24 +1019,18 @@ function App() {
                     onChange={(e) =>
                       setCustomer({
                         ...customer,
-                        email: e.target.value
+                        email: e.target.value,
                       })
                     }
                     placeholder="you@example.com"
                   />
-
                 </div>
-
               </label>
 
               <label>
-
                 Delivery address
 
-                <div
-                  className="input-wrap textarea-wrap"
-                >
-
+                <div className="input-wrap textarea-wrap">
                   <Home size={17} />
 
                   <textarea
@@ -1101,15 +1039,13 @@ function App() {
                     onChange={(e) =>
                       setCustomer({
                         ...customer,
-                        address: e.target.value
+                        address: e.target.value,
                       })
                     }
                     placeholder="Enter your full delivery address"
-                    rows="4"
+                    rows={4}
                   />
-
                 </div>
-
               </label>
 
               <button
@@ -1117,10 +1053,14 @@ function App() {
                 className="primary full"
                 disabled={savingOrder}
                 style={{
-                  opacity: savingOrder ? 0.7 : 1
+                  opacity: savingOrder
+                    ? 0.7
+                    : 1,
+                  cursor: savingOrder
+                    ? "wait"
+                    : "pointer",
                 }}
               >
-
                 {savingOrder
                   ? "Saving your order..."
                   : "Place order"}
@@ -1128,29 +1068,22 @@ function App() {
                 {!savingOrder && (
                   <CheckCircle2 size={17} />
                 )}
-
               </button>
-
             </form>
-
           </div>
-
         </div>
-
       )}
 
       {/* ORDER SUCCESS */}
+
       {orderComplete && (
-
         <div className="overlay">
-
           <div className="modal">
-
             <div
               className="modal-icon"
               style={{
                 background: "#e9f7ed",
-                color: "#18864b"
+                color: "#18864b",
               }}
             >
               <CheckCircle2 size={28} />
@@ -1175,6 +1108,32 @@ function App() {
               to confirm delivery.
             </p>
 
+            {orderNumber && (
+              <div
+                style={{
+                  background: "#fff7f2",
+                  border: "1px solid #ead9d4",
+                  borderRadius: "12px",
+                  padding: "12px",
+                  margin: "15px 0",
+                  fontSize: "12px",
+                }}
+              >
+                <strong>
+                  Order ID
+                </strong>
+
+                <div
+                  style={{
+                    marginTop: "4px",
+                    wordBreak: "break-all",
+                  }}
+                >
+                  {orderNumber}
+                </div>
+              </div>
+            )}
+
             <div
               style={{
                 background: "#fff7f2",
@@ -1182,10 +1141,9 @@ function App() {
                 borderRadius: "12px",
                 padding: "14px",
                 margin: "15px 0",
-                textAlign: "left"
+                textAlign: "left",
               }}
             >
-
               <strong>
                 Delivery address
               </strong>
@@ -1194,18 +1152,17 @@ function App() {
                 style={{
                   marginTop: "5px",
                   marginBottom: 0,
-                  fontSize: "13px"
+                  fontSize: "13px",
                 }}
               >
                 {customer.address}
               </p>
-
             </div>
 
             <div
               className="checkout-total"
               style={{
-                marginBottom: "15px"
+                marginBottom: "15px",
               }}
             >
               Order total{" "}
@@ -1215,18 +1172,15 @@ function App() {
             </div>
 
             <button
+              type="button"
               className="primary full"
               onClick={finishOrder}
             >
               Done
             </button>
-
           </div>
-
         </div>
-
       )}
-
     </div>
   );
 }
@@ -1234,23 +1188,17 @@ function App() {
 function Feature({
   icon,
   title,
-  text
+  text,
 }) {
   return (
     <div className="feature">
-
       <div className="feature-icon">
         {icon}
       </div>
 
-      <h3>
-        {title}
-      </h3>
+      <h3>{title}</h3>
 
-      <p>
-        {text}
-      </p>
-
+      <p>{text}</p>
     </div>
   );
 }
@@ -1258,29 +1206,19 @@ function Feature({
 function Step({
   n,
   title,
-  text
+  text,
 }) {
   return (
     <div className="step">
+      <b>{n}</b>
 
-      <b>
-        {n}
-      </b>
+      <h3>{title}</h3>
 
-      <h3>
-        {title}
-      </h3>
-
-      <p>
-        {text}
-      </p>
-
+      <p>{text}</p>
     </div>
   );
 }
 
 createRoot(
   document.getElementById("root")
-).render(
-  <App />
-);
+).render(<App />);
