@@ -14,11 +14,10 @@ import {
   Flame,
   Star,
   ArrowRight,
+  CheckCircle2,
   Phone,
   Mail,
-  Home,
-  CheckCircle2,
-  Loader2
+  Home
 } from "lucide-react";
 import "./styles.css";
 
@@ -136,9 +135,30 @@ const MENU = [
   }
 ];
 
-const cats = ["All", "Rice & Swallow", "Soups", "Proteins", "Drinks"];
+const cats = [
+  "All",
+  "Rice & Swallow",
+  "Soups",
+  "Proteins",
+  "Drinks"
+];
 
 const money = (n) => "₦" + Number(n || 0).toLocaleString("en-NG");
+
+/*
+  IMPORTANT:
+  If your Express server is deployed separately, put its URL in Vercel as:
+
+  VITE_API_URL = https://YOUR-BACKEND-URL.vercel.app
+
+  The code below will then send orders to:
+
+  https://YOUR-BACKEND-URL.vercel.app/api/orders
+*/
+
+const API_URL = (
+  import.meta.env.VITE_API_URL || ""
+).replace(/\/$/, "");
 
 function App() {
   const [cat, setCat] = useState("All");
@@ -148,10 +168,8 @@ function App() {
   const [drawer, setDrawer] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const [savingOrder, setSavingOrder] = useState(false);
   const [orderError, setOrderError] = useState("");
-
-  const [orderData, setOrderData] = useState(null);
 
   const [customer, setCustomer] = useState({
     name: "",
@@ -176,7 +194,7 @@ function App() {
   const count = cart.reduce((s, i) => s + i.qty, 0);
 
   const subtotal = cart.reduce(
-    (s, i) => s + Number(i.price) * Number(i.qty),
+    (s, i) => s + i.price * i.qty,
     0
   );
 
@@ -187,7 +205,9 @@ function App() {
     setCart((current) =>
       current.some((x) => x.id === item.id)
         ? current.map((x) =>
-            x.id === item.id ? { ...x, qty: x.qty + 1 } : x
+            x.id === item.id
+              ? { ...x, qty: x.qty + 1 }
+              : x
           )
         : [...current, { ...item, qty: 1 }]
     );
@@ -199,7 +219,9 @@ function App() {
     setCart((current) =>
       current
         .map((x) =>
-          x.id === id ? { ...x, qty: x.qty + amount } : x
+          x.id === id
+            ? { ...x, qty: x.qty + amount }
+            : x
         )
         .filter((x) => x.qty > 0)
     );
@@ -211,16 +233,9 @@ function App() {
       return;
     }
 
-    setDrawer(false);
     setOrderError("");
+    setDrawer(false);
     setCheckoutOpen(true);
-  }
-
-  function updateCustomer(field, value) {
-    setCustomer((current) => ({
-      ...current,
-      [field]: value
-    }));
   }
 
   async function placeOrder(e) {
@@ -248,86 +263,81 @@ function App() {
       return;
     }
 
-    setSubmitting(true);
+    setSavingOrder(true);
 
-    const orderItems = cart.map((item) => ({
-      id: item.id,
-      name: item.name,
-      category: item.cat,
-      price: item.price,
-      quantity: item.qty,
-      image: item.image
-    }));
+    /*
+      This is the important part.
 
-    const payload = {
-      customer_name: customer.name.trim(),
-      customer_phone: customer.phone.trim(),
-      customer_email: customer.email.trim() || null,
-      delivery_address: customer.address.trim(),
-      items: orderItems,
-      subtotal,
-      delivery_fee: delivery,
-      total
-    };
+      We are now actually sending the customer's:
+      - name
+      - phone
+      - email
+      - delivery address
+      - ordered items
+      - subtotal
+      - delivery fee
+      - total
+
+      to your Express server.
+    */
 
     try {
-      /*
-       * IMPORTANT:
-       * If your Vercel frontend and backend are deployed separately,
-       * replace this with your deployed backend URL.
-       *
-       * Example:
-       * const API_URL = "https://your-server.vercel.app";
-       *
-       * If your backend is served from the same deployment,
-       * the relative /api/orders URL will work.
-       */
-      const API_URL = "";
+      const response = await fetch(
+        `${API_URL}/api/orders`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            customer_name: customer.name.trim(),
+            customer_phone: customer.phone.trim(),
+            customer_email:
+              customer.email.trim() || null,
+            delivery_address: customer.address.trim(),
 
-      const response = await fetch(`${API_URL}/api/orders`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(payload)
-      });
+            items: cart.map((item) => ({
+              id: item.id,
+              name: item.name,
+              category: item.cat,
+              price: item.price,
+              quantity: item.qty
+            })),
 
-      let result = null;
+            subtotal,
+            delivery_fee: delivery,
+            total
+          })
+        }
+      );
 
-      try {
-        result = await response.json();
-      } catch {
-        result = null;
-      }
+      const data = await response.json();
 
-      if (!response.ok || !result?.success) {
+      if (!response.ok || !data.success) {
         throw new Error(
-          result?.message ||
-            `Unable to place order. Server returned ${response.status}.`
+          data.message || "Unable to save your order."
         );
       }
 
-      setOrderData(result.order || payload);
+      console.log("ORDER SAVED:", data.order);
 
       setCheckoutOpen(false);
       setOrderComplete(true);
     } catch (error) {
-      console.error("Order submission error:", error);
+      console.error("ORDER SUBMISSION ERROR:", error);
 
       setOrderError(
         error.message ||
-          "We could not submit your order. Please try again."
+          "We could not send your order. Please try again."
       );
     } finally {
-      setSubmitting(false);
+      setSavingOrder(false);
     }
   }
 
   function finishOrder() {
     setCart([]);
     setOrderComplete(false);
-    setOrderData(null);
-    setOrderError("");
 
     setCustomer({
       name: "",
@@ -339,8 +349,11 @@ function App() {
 
   return (
     <div className="app">
+
+      {/* NAVIGATION */}
       <header className="nav">
         <div className="nav-inner">
+
           <div
             className="brand"
             onClick={() =>
@@ -353,8 +366,13 @@ function App() {
             <div className="logo">Go</div>
 
             <div>
-              <div className="brand-name">Gbemiolofada</div>
-              <div className="brand-sub">FOODS</div>
+              <div className="brand-name">
+                Gbemiolofada
+              </div>
+
+              <div className="brand-sub">
+                FOODS
+              </div>
             </div>
           </div>
 
@@ -365,16 +383,11 @@ function App() {
           </div>
 
           <div className="nav-actions">
-            <button
-              className="icon-btn"
-              onClick={() =>
-                alert(
-                  "Account features will be connected to the backend next."
-                )
-              }
-            >
+            <button className="icon-btn">
               <User size={19} />
-              <span className="hide-sm">Account</span>
+              <span className="hide-sm">
+                Account
+              </span>
             </button>
 
             <button
@@ -382,17 +395,23 @@ function App() {
               onClick={() => setDrawer(true)}
             >
               <ShoppingBag size={18} />
+
               <span>Cart</span>
 
               {count > 0 && <b>{count}</b>}
             </button>
           </div>
+
         </div>
       </header>
 
       <main>
+
+        {/* HERO */}
         <section className="hero">
+
           <div className="hero-copy">
+
             <div className="eyebrow">
               <span></span>
               AUTHENTIC NIGERIAN FLAVOUR
@@ -405,21 +424,32 @@ function App() {
             </h1>
 
             <p>
-              Comforting Nigerian meals, prepared fresh and
-              delivered to your door while they're still hot.
+              Comforting Nigerian meals, prepared fresh
+              and delivered to your door while they're
+              still hot.
             </p>
 
             <div className="hero-actions">
-              <a className="primary" href="#menu">
-                Order your meal <ArrowRight size={17} />
+
+              <a
+                className="primary"
+                href="#menu"
+              >
+                Order your meal
+                <ArrowRight size={17} />
               </a>
 
-              <a className="text-link" href="#how">
+              <a
+                className="text-link"
+                href="#how"
+              >
                 How it works
               </a>
+
             </div>
 
             <div className="trust">
+
               <span>
                 <ShieldCheck size={17} />
                 Freshly prepared
@@ -429,53 +459,88 @@ function App() {
                 <Clock3 size={17} />
                 Fast delivery
               </span>
+
             </div>
+
           </div>
 
           <div className="hero-visual">
+
             <div className="hero-card">
+
               <img
                 src={MENU[0].image}
                 alt="Jollof rice"
               />
 
               <div className="floating-card">
-                <div className="stars">★★★★★</div>
-                <strong>Loved by food lovers</strong>
-                <small>Freshness you can taste.</small>
+
+                <div className="stars">
+                  ★★★★★
+                </div>
+
+                <strong>
+                  Loved by food lovers
+                </strong>
+
+                <small>
+                  Freshness you can taste.
+                </small>
+
               </div>
+
             </div>
+
           </div>
+
         </section>
 
-        <section className="section" id="menu">
+        {/* MENU */}
+        <section
+          className="section"
+          id="menu"
+        >
+
           <div className="section-head">
+
             <div>
-              <div className="kicker">OUR MENU</div>
+
+              <div className="kicker">
+                OUR MENU
+              </div>
 
               <h2>
                 Something delicious
                 <br />
                 <em>for everyone.</em>
               </h2>
+
             </div>
 
             <div className="search">
+
               <Search size={18} />
 
               <input
                 value={q}
-                onChange={(e) => setQ(e.target.value)}
+                onChange={(e) =>
+                  setQ(e.target.value)
+                }
                 placeholder="Search meals..."
               />
+
             </div>
+
           </div>
 
           <div className="chips">
+
             {cats.map((c) => (
               <button
                 className={
-                  cat === c ? "chip active" : "chip"
+                  cat === c
+                    ? "chip active"
+                    : "chip"
                 }
                 onClick={() => setCat(c)}
                 key={c}
@@ -483,15 +548,20 @@ function App() {
                 {c}
               </button>
             ))}
+
           </div>
 
           <div className="grid">
+
             {items.map((item) => (
+
               <article
                 className="food-card"
                 key={item.id}
               >
+
                 <div className="food-img">
+
                   <img
                     src={item.image}
                     alt={item.name}
@@ -509,34 +579,57 @@ function App() {
                   >
                     <Plus size={20} />
                   </button>
+
                 </div>
 
                 <div className="food-body">
+
                   <div className="food-meta">
-                    <span>{item.cat}</span>
+
+                    <span>
+                      {item.cat}
+                    </span>
+
                     <strong>
                       {money(item.price)}
                     </strong>
+
                   </div>
 
-                  <h3>{item.name}</h3>
+                  <h3>
+                    {item.name}
+                  </h3>
 
-                  <p>{item.desc}</p>
+                  <p>
+                    {item.desc}
+                  </p>
 
                   <button
                     className="add-line"
                     onClick={() => add(item)}
                   >
-                    Add to order <Plus size={16} />
+                    Add to order
+                    <Plus size={16} />
                   </button>
+
                 </div>
+
               </article>
+
             ))}
+
           </div>
+
         </section>
 
-        <section className="why" id="why">
+        {/* WHY */}
+        <section
+          className="why"
+          id="why"
+        >
+
           <div className="section narrow">
+
             <div className="kicker">
               WHY GBEMIOLOFADA
             </div>
@@ -548,6 +641,7 @@ function App() {
             </h2>
 
             <div className="feature-grid">
+
               <Feature
                 icon={<Flame />}
                 title="Made fresh"
@@ -565,18 +659,29 @@ function App() {
                 title="Delivered with care"
                 text="From our kitchen to your doorstep, every order is handled with care."
               />
+
             </div>
+
           </div>
+
         </section>
 
-        <section className="how section" id="how">
+        {/* HOW IT WORKS */}
+        <section
+          className="how section"
+          id="how"
+        >
+
           <div className="kicker">
             SIMPLE FROM START TO FINISH
           </div>
 
-          <h2>Order in three easy steps.</h2>
+          <h2>
+            Order in three easy steps.
+          </h2>
 
           <div className="steps">
+
             <Step
               n="01"
               title="Choose your meal"
@@ -586,7 +691,7 @@ function App() {
             <Step
               n="02"
               title="Checkout securely"
-              text="Enter your delivery details and submit your order."
+              text="Enter your delivery details and complete your order."
             />
 
             <Step
@@ -594,79 +699,122 @@ function App() {
               title="Enjoy your food"
               text="We prepare it fresh and get it moving to you."
             />
+
           </div>
+
         </section>
+
       </main>
 
+      {/* FOOTER */}
       <footer>
+
         <div className="footer-brand">
-          <div className="logo">Go</div>
+
+          <div className="logo">
+            Go
+          </div>
 
           <div>
             <div className="brand-name">
               Gbemiolofada
             </div>
-            <div className="brand-sub">FOODS</div>
+
+            <div className="brand-sub">
+              FOODS
+            </div>
           </div>
+
         </div>
 
-        <p>Good food, made with heart.</p>
+        <p>
+          Good food, made with heart.
+        </p>
 
         <small>
-          © 2026 Gbemiolofada Foods. All rights reserved.
+          © 2026 Gbemiolofada Foods.
+          All rights reserved.
         </small>
+
       </footer>
 
+      {/* MOBILE CART */}
       {count > 0 && (
+
         <button
           className="mobile-cart"
           onClick={() => setDrawer(true)}
         >
+
           <span>
+
             <ShoppingBag size={18} />
-            {count} item{count > 1 ? "s" : ""}
+
+            {count} item
+            {count > 1 ? "s" : ""}
+
           </span>
 
           <strong>
+
             {money(subtotal)}
+
             <ChevronRight size={18} />
+
           </strong>
+
         </button>
+
       )}
 
       {/* CART DRAWER */}
       {drawer && (
+
         <div
           className="overlay"
           onClick={() => setDrawer(false)}
         >
+
           <aside
             className="drawer"
             onClick={(e) =>
               e.stopPropagation()
             }
           >
+
             <div className="drawer-head">
+
               <div>
+
                 <div className="kicker">
                   YOUR ORDER
                 </div>
 
-                <h2>Ready to eat?</h2>
+                <h2>
+                  Ready to eat?
+                </h2>
+
               </div>
 
               <button
-                onClick={() => setDrawer(false)}
+                onClick={() =>
+                  setDrawer(false)
+                }
               >
                 <X />
               </button>
+
             </div>
 
             {cart.length === 0 ? (
+
               <div className="empty">
+
                 <ShoppingBag size={40} />
 
-                <p>Your basket is waiting.</p>
+                <p>
+                  Your basket is waiting.
+                </p>
 
                 <button
                   className="primary"
@@ -676,28 +824,39 @@ function App() {
                 >
                   Browse menu
                 </button>
+
               </div>
+
             ) : (
+
               <>
+
                 <div className="cart-items">
+
                   {cart.map((i) => (
+
                     <div
                       className="cart-item"
                       key={i.id}
                     >
+
                       <img
                         src={i.image}
                         alt={i.name}
                       />
 
                       <div className="ci-main">
-                        <strong>{i.name}</strong>
+
+                        <strong>
+                          {i.name}
+                        </strong>
 
                         <span>
                           {money(i.price)}
                         </span>
 
                         <div className="qty">
+
                           <button
                             onClick={() =>
                               change(i.id, -1)
@@ -706,7 +865,9 @@ function App() {
                             <Minus size={14} />
                           </button>
 
-                          <b>{i.qty}</b>
+                          <b>
+                            {i.qty}
+                          </b>
 
                           <button
                             onClick={() =>
@@ -715,32 +876,49 @@ function App() {
                           >
                             <Plus size={14} />
                           </button>
+
                         </div>
+
                       </div>
+
                     </div>
+
                   ))}
+
                 </div>
 
                 <div className="checkout">
+
                   <div>
-                    <span>Subtotal</span>
+                    <span>
+                      Subtotal
+                    </span>
+
                     <strong>
                       {money(subtotal)}
                     </strong>
                   </div>
 
                   <div>
-                    <span>Delivery</span>
+                    <span>
+                      Delivery
+                    </span>
+
                     <strong>
                       {money(delivery)}
                     </strong>
                   </div>
 
                   <div className="total">
-                    <span>Total</span>
+
+                    <span>
+                      Total
+                    </span>
+
                     <strong>
                       {money(total)}
                     </strong>
+
                   </div>
 
                   <button
@@ -755,37 +933,50 @@ function App() {
                     Secure checkout · Your order
                     details are kept private.
                   </small>
+
                 </div>
+
               </>
+
             )}
+
           </aside>
+
         </div>
+
       )}
 
-      {/* CHECKOUT FORM */}
+      {/* CHECKOUT MODAL */}
       {checkoutOpen && (
+
         <div
           className="overlay"
-          onClick={() =>
-            !submitting && setCheckoutOpen(false)
-          }
+          onClick={() => {
+            if (!savingOrder) {
+              setCheckoutOpen(false);
+            }
+          }}
         >
+
           <div
             className="modal checkout-modal"
             onClick={(e) =>
               e.stopPropagation()
             }
           >
-            <button
-              className="modal-close"
-              onClick={() =>
-                !submitting &&
-                setCheckoutOpen(false)
-              }
-              disabled={submitting}
-            >
-              <X />
-            </button>
+
+            {!savingOrder && (
+
+              <button
+                className="modal-close"
+                onClick={() =>
+                  setCheckoutOpen(false)
+                }
+              >
+                <X />
+              </button>
+
+            )}
 
             <div className="kicker">
               CHECKOUT
@@ -797,234 +988,172 @@ function App() {
 
             <p className="checkout-total">
               Order total:{" "}
-              <strong>{money(total)}</strong>
+              <strong>
+                {money(total)}
+              </strong>
             </p>
 
             {orderError && (
+
               <div
                 style={{
                   background: "#fff0f0",
-                  border: "1px solid #e5b8b8",
                   color: "#941219",
-                  borderRadius: "10px",
+                  border: "1px solid #efcaca",
                   padding: "12px",
+                  borderRadius: "10px",
                   marginBottom: "15px",
-                  fontSize: "12px",
-                  lineHeight: "1.5"
+                  fontSize: "13px"
                 }}
               >
                 {orderError}
               </div>
+
             )}
 
             <form onSubmit={placeOrder}>
+
               <label>
+
                 Full name
+
                 <div className="input-wrap">
+
                   <User size={17} />
 
                   <input
                     required
                     value={customer.name}
                     onChange={(e) =>
-                      updateCustomer(
-                        "name",
-                        e.target.value
-                      )
+                      setCustomer({
+                        ...customer,
+                        name: e.target.value
+                      })
                     }
                     placeholder="Your full name"
-                    disabled={submitting}
                   />
+
                 </div>
+
               </label>
 
               <label>
+
                 Phone number
+
                 <div className="input-wrap">
+
                   <Phone size={17} />
 
                   <input
                     required
-                    type="tel"
                     value={customer.phone}
                     onChange={(e) =>
-                      updateCustomer(
-                        "phone",
-                        e.target.value
-                      )
+                      setCustomer({
+                        ...customer,
+                        phone: e.target.value
+                      })
                     }
                     placeholder="080..."
-                    disabled={submitting}
                   />
+
                 </div>
+
               </label>
 
               <label>
+
                 Email address
+
                 <div className="input-wrap">
+
                   <Mail size={17} />
 
                   <input
                     type="email"
                     value={customer.email}
                     onChange={(e) =>
-                      updateCustomer(
-                        "email",
-                        e.target.value
-                      )
+                      setCustomer({
+                        ...customer,
+                        email: e.target.value
+                      })
                     }
                     placeholder="you@example.com"
-                    disabled={submitting}
                   />
+
                 </div>
+
               </label>
 
               <label>
+
                 Delivery address
-                <div className="input-wrap">
+
+                <div
+                  className="input-wrap textarea-wrap"
+                >
+
                   <Home size={17} />
 
                   <textarea
                     required
                     value={customer.address}
                     onChange={(e) =>
-                      updateCustomer(
-                        "address",
-                        e.target.value
-                      )
+                      setCustomer({
+                        ...customer,
+                        address: e.target.value
+                      })
                     }
                     placeholder="Enter your full delivery address"
-                    disabled={submitting}
-                    rows={4}
+                    rows="4"
                   />
+
                 </div>
+
               </label>
-
-              <div
-                style={{
-                  marginTop: "16px",
-                  borderTop:
-                    "1px solid var(--line)",
-                  paddingTop: "14px"
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent:
-                      "space-between",
-                    fontSize: "12px",
-                    color: "var(--muted)",
-                    marginBottom: "6px"
-                  }}
-                >
-                  <span>Subtotal</span>
-                  <strong>
-                    {money(subtotal)}
-                  </strong>
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent:
-                      "space-between",
-                    fontSize: "12px",
-                    color: "var(--muted)",
-                    marginBottom: "6px"
-                  }}
-                >
-                  <span>Delivery</span>
-                  <strong>
-                    {money(delivery)}
-                  </strong>
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent:
-                      "space-between",
-                    fontSize: "16px",
-                    fontWeight: "700",
-                    color: "var(--deep)"
-                  }}
-                >
-                  <span>Total</span>
-                  <strong>
-                    {money(total)}
-                  </strong>
-                </div>
-              </div>
 
               <button
                 type="submit"
                 className="primary full"
-                disabled={submitting}
+                disabled={savingOrder}
                 style={{
-                  marginTop: "18px",
-                  opacity: submitting ? 0.7 : 1
+                  opacity: savingOrder ? 0.7 : 1
                 }}
               >
-                {submitting ? (
-                  <>
-                    <Loader2
-                      size={17}
-                      style={{
-                        animation:
-                          "spin 1s linear infinite"
-                      }}
-                    />
-                    Sending order...
-                  </>
-                ) : (
-                  <>
-                    Place order
-                    <ArrowRight size={17} />
-                  </>
+
+                {savingOrder
+                  ? "Saving your order..."
+                  : "Place order"}
+
+                {!savingOrder && (
+                  <CheckCircle2 size={17} />
                 )}
+
               </button>
 
-              <small
-                style={{
-                  display: "block",
-                  textAlign: "center",
-                  color: "var(--muted)",
-                  fontSize: "9.5px",
-                  marginTop: "9px"
-                }}
-              >
-                Your customer information and
-                order details will be securely
-                submitted to our order system.
-              </small>
             </form>
+
           </div>
+
         </div>
+
       )}
 
       {/* ORDER SUCCESS */}
       {orderComplete && (
+
         <div className="overlay">
-          <div
-            className="modal"
-            style={{
-              textAlign: "center"
-            }}
-          >
+
+          <div className="modal">
+
             <div
+              className="modal-icon"
               style={{
-                width: "58px",
-                height: "58px",
-                borderRadius: "50%",
-                background: "#edf8ef",
-                color: "#21833b",
-                display: "grid",
-                placeItems: "center",
-                margin: "0 auto 18px"
+                background: "#e9f7ed",
+                color: "#18864b"
               }}
             >
-              <CheckCircle2 size={30} />
+              <CheckCircle2 size={28} />
             </div>
 
             <div className="kicker">
@@ -1033,12 +1162,13 @@ function App() {
 
             <h2>
               Thank you,{" "}
-              {customer.name.split(" ")[0]}!
+              {customer.name}!
             </h2>
 
             <p>
               Your order has been received
-              successfully. We'll contact you on{" "}
+              successfully. We'll contact you
+              on{" "}
               <strong>
                 {customer.phone}
               </strong>{" "}
@@ -1047,55 +1177,40 @@ function App() {
 
             <div
               style={{
-                background: "var(--cream)",
-                border: "1px solid var(--line)",
+                background: "#fff7f2",
+                border: "1px solid #ead9d4",
                 borderRadius: "12px",
                 padding: "14px",
-                margin: "18px 0",
+                margin: "15px 0",
                 textAlign: "left"
               }}
             >
-              <div
-                style={{
-                  fontSize: "10px",
-                  color: "var(--muted)",
-                  textTransform: "uppercase",
-                  letterSpacing: ".1em",
-                  marginBottom: "5px"
-                }}
-              >
-                Delivery address
-              </div>
 
-              <strong
+              <strong>
+                Delivery address
+              </strong>
+
+              <p
                 style={{
-                  fontSize: "13px",
-                  lineHeight: "1.5"
+                  marginTop: "5px",
+                  marginBottom: 0,
+                  fontSize: "13px"
                 }}
               >
                 {customer.address}
-              </strong>
+              </p>
 
-              <div
-                style={{
-                  fontSize: "10px",
-                  color: "var(--muted)",
-                  marginTop: "12px",
-                  marginBottom: "5px"
-                }}
-              >
-                Order total
-              </div>
+            </div>
 
-              <strong
-                style={{
-                  color: "var(--red)",
-                  fontSize: "18px"
-                }}
-              >
-                {money(
-                  orderData?.total ?? total
-                )}
+            <div
+              className="checkout-total"
+              style={{
+                marginBottom: "15px"
+              }}
+            >
+              Order total{" "}
+              <strong>
+                {money(total)}
               </strong>
             </div>
 
@@ -1105,39 +1220,67 @@ function App() {
             >
               Done
             </button>
+
           </div>
+
         </div>
+
       )}
+
     </div>
   );
 }
 
-function Feature({ icon, title, text }) {
+function Feature({
+  icon,
+  title,
+  text
+}) {
   return (
     <div className="feature">
+
       <div className="feature-icon">
         {icon}
       </div>
 
-      <h3>{title}</h3>
+      <h3>
+        {title}
+      </h3>
 
-      <p>{text}</p>
+      <p>
+        {text}
+      </p>
+
     </div>
   );
 }
 
-function Step({ n, title, text }) {
+function Step({
+  n,
+  title,
+  text
+}) {
   return (
     <div className="step">
-      <b>{n}</b>
 
-      <h3>{title}</h3>
+      <b>
+        {n}
+      </b>
 
-      <p>{text}</p>
+      <h3>
+        {title}
+      </h3>
+
+      <p>
+        {text}
+      </p>
+
     </div>
   );
 }
 
 createRoot(
   document.getElementById("root")
-).render(<App />);
+).render(
+  <App />
+);
