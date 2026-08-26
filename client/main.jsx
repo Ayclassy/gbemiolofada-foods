@@ -15,7 +15,6 @@ import {
   Star,
   ArrowRight,
   CheckCircle2,
-  LogIn,
   Phone,
   Mail,
   Home
@@ -103,7 +102,7 @@ const MENU = [
     name: "Fried Croaker Fish",
     cat: "Proteins",
     price: 3000,
-    desc: "Crispy fried croaker served with signature pepper sauce.",
+    desc: "Crispy fried croaker served with our signature pepper sauce.",
     image:
       "https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=900&q=85"
   },
@@ -136,9 +135,37 @@ const MENU = [
   }
 ];
 
-const cats = ["All", "Rice & Swallow", "Soups", "Proteins", "Drinks"];
+const cats = [
+  "All",
+  "Rice & Swallow",
+  "Soups",
+  "Proteins",
+  "Drinks"
+];
 
-const money = (n) => "₦" + n.toLocaleString("en-NG");
+const money = (n) =>
+  "₦" + Number(n || 0).toLocaleString("en-NG");
+
+/*
+  YOUR BACKEND URL
+
+  Vercel environment variable:
+  VITE_API_URL
+
+  Value:
+  https://gbemiolofada-foods1.vercel.app/
+*/
+
+const API_URL = (
+  import.meta.env.VITE_API_URL ||
+  "https://gbemiolofada-foods1.vercel.app"
+).replace(/\/$/, "");
+
+console.log("====================================");
+console.log("GBEMIOLOFADA FOODS");
+console.log("Backend API URL:", API_URL);
+console.log("Orders endpoint:", `${API_URL}/api/orders`);
+console.log("====================================");
 
 function App() {
   const [cat, setCat] = useState("All");
@@ -146,9 +173,10 @@ function App() {
   const [cart, setCart] = useState([]);
 
   const [drawer, setDrawer] = useState(false);
-  const [accountOpen, setAccountOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
+  const [savingOrder, setSavingOrder] = useState(false);
+  const [orderError, setOrderError] = useState("");
 
   const [customer, setCustomer] = useState({
     name: "",
@@ -157,32 +185,58 @@ function App() {
     address: ""
   });
 
-  const items = useMemo(
-    () =>
-      MENU.filter(
-        (m) =>
-          (cat === "All" || m.cat === cat) &&
-          (!q ||
-            `${m.name} ${m.desc}`
-              .toLowerCase()
-              .includes(q.toLowerCase()))
-      ),
-    [cat, q]
+  const items = useMemo(() => {
+    return MENU.filter((m) => {
+      const matchesCategory =
+        cat === "All" || m.cat === cat;
+
+      const searchText =
+        `${m.name} ${m.desc}`.toLowerCase();
+
+      const matchesSearch =
+        !q || searchText.includes(q.toLowerCase());
+
+      return matchesCategory && matchesSearch;
+    });
+  }, [cat, q]);
+
+  const count = cart.reduce(
+    (sum, item) => sum + item.qty,
+    0
   );
 
-  const count = cart.reduce((s, i) => s + i.qty, 0);
-  const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const subtotal = cart.reduce(
+    (sum, item) =>
+      sum + item.price * item.qty,
+    0
+  );
+
   const delivery = cart.length ? 500 : 0;
   const total = subtotal + delivery;
 
   function add(item) {
-    setCart((current) =>
-      current.some((x) => x.id === item.id)
-        ? current.map((x) =>
-            x.id === item.id ? { ...x, qty: x.qty + 1 } : x
-          )
-        : [...current, { ...item, qty: 1 }]
-    );
+    setCart((current) => {
+      const exists = current.some(
+        (x) => x.id === item.id
+      );
+
+      if (exists) {
+        return current.map((x) =>
+          x.id === item.id
+            ? { ...x, qty: x.qty + 1 }
+            : x
+        );
+      }
+
+      return [
+        ...current,
+        {
+          ...item,
+          qty: 1
+        }
+      ];
+    });
+
     setDrawer(true);
   }
 
@@ -190,41 +244,196 @@ function App() {
     setCart((current) =>
       current
         .map((x) =>
-          x.id === id ? { ...x, qty: x.qty + amount } : x
+          x.id === id
+            ? {
+                ...x,
+                qty: x.qty + amount
+              }
+            : x
         )
         .filter((x) => x.qty > 0)
     );
   }
 
-  function startCheckout() {
+  function openCheckout() {
     if (!cart.length) {
       setDrawer(true);
       return;
     }
 
+    setOrderError("");
     setDrawer(false);
     setCheckoutOpen(true);
   }
 
-  function placeOrder(e) {
+  async function placeOrder(e) {
     e.preventDefault();
 
-    if (
-      !customer.name.trim() ||
-      !customer.phone.trim() ||
-      !customer.address.trim()
-    ) {
-      alert("Please fill in your name, phone number and delivery address.");
+    setOrderError("");
+
+    if (!customer.name.trim()) {
+      setOrderError(
+        "Please enter your full name."
+      );
       return;
     }
 
-    setCheckoutOpen(false);
-    setOrderComplete(true);
+    if (!customer.phone.trim()) {
+      setOrderError(
+        "Please enter your phone number."
+      );
+      return;
+    }
+
+    if (!customer.address.trim()) {
+      setOrderError(
+        "Please enter your delivery address."
+      );
+      return;
+    }
+
+    if (!cart.length) {
+      setOrderError(
+        "Your cart is empty."
+      );
+      return;
+    }
+
+    setSavingOrder(true);
+
+    const orderPayload = {
+      customer_name:
+        customer.name.trim(),
+
+      customer_phone:
+        customer.phone.trim(),
+
+      customer_email:
+        customer.email.trim() || null,
+
+      delivery_address:
+        customer.address.trim(),
+
+      items: cart.map((item) => ({
+        id: item.id,
+        name: item.name,
+        category: item.cat,
+        price: item.price,
+        quantity: item.qty
+      })),
+
+      subtotal,
+      delivery_fee: delivery,
+      total
+    };
+
+    console.log(
+      "===================================="
+    );
+
+    console.log(
+      "SENDING ORDER TO BACKEND"
+    );
+
+    console.log(
+      "URL:",
+      `${API_URL}/api/orders`
+    );
+
+    console.log(
+      "ORDER DATA:",
+      orderPayload
+    );
+
+    console.log(
+      "===================================="
+    );
+
+    try {
+      const response = await fetch(
+        `${API_URL}/api/orders`,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json"
+          },
+
+          body: JSON.stringify(
+            orderPayload
+          )
+        }
+      );
+
+      console.log(
+        "BACKEND RESPONSE STATUS:",
+        response.status
+      );
+
+      const responseText =
+        await response.text();
+
+      console.log(
+        "BACKEND RESPONSE:",
+        responseText
+      );
+
+      let data;
+
+      try {
+        data =
+          JSON.parse(responseText);
+      } catch {
+        throw new Error(
+          "The backend returned an invalid response."
+        );
+      }
+
+      if (
+        !response.ok ||
+        !data.success
+      ) {
+        throw new Error(
+          data.message ||
+            "Unable to save the order."
+        );
+      }
+
+      console.log(
+        "ORDER SUCCESSFULLY SAVED:",
+        data.order
+      );
+
+      setCheckoutOpen(false);
+      setOrderComplete(true);
+    } catch (error) {
+      console.error(
+        "===================================="
+      );
+
+      console.error(
+        "ORDER SUBMISSION ERROR:",
+        error
+      );
+
+      console.error(
+        "===================================="
+      );
+
+      setOrderError(
+        error.message ||
+          "We could not send your order. Please try again."
+      );
+    } finally {
+      setSavingOrder(false);
+    }
   }
 
   function finishOrder() {
     setCart([]);
     setOrderComplete(false);
+
     setCustomer({
       name: "",
       phone: "",
@@ -235,189 +444,336 @@ function App() {
 
   return (
     <div className="app">
+
+      {/* NAVIGATION */}
+
       <header className="nav">
         <div className="nav-inner">
+
           <div
             className="brand"
             onClick={() =>
-              window.scrollTo({ top: 0, behavior: "smooth" })
+              window.scrollTo({
+                top: 0,
+                behavior: "smooth"
+              })
             }
           >
-            <div className="logo">Go</div>
+            <div className="logo">
+              Go
+            </div>
 
             <div>
-              <div className="brand-name">Gbemiolofada</div>
-              <div className="brand-sub">FOODS</div>
+              <div className="brand-name">
+                Gbemiolofada
+              </div>
+
+              <div className="brand-sub">
+                FOODS
+              </div>
             </div>
           </div>
 
           <div className="desktop-links">
-            <a href="#menu">Menu</a>
-            <a href="#why">Why us</a>
-            <a href="#how">How it works</a>
+            <a href="#menu">
+              Menu
+            </a>
+
+            <a href="#why">
+              Why us
+            </a>
+
+            <a href="#how">
+              How it works
+            </a>
           </div>
 
           <div className="nav-actions">
-            <button
-              className="icon-btn"
-              onClick={() => setAccountOpen(true)}
-            >
+
+            <button className="icon-btn">
               <User size={19} />
-              <span className="hide-sm">Account</span>
+
+              <span className="hide-sm">
+                Account
+              </span>
             </button>
 
             <button
               className="cart-btn"
-              onClick={() => setDrawer(true)}
+              onClick={() =>
+                setDrawer(true)
+              }
             >
               <ShoppingBag size={18} />
-              <span>Cart</span>
-              {count > 0 && <b>{count}</b>}
+
+              <span>
+                Cart
+              </span>
+
+              {count > 0 && (
+                <b>{count}</b>
+              )}
             </button>
+
           </div>
         </div>
       </header>
 
       <main>
+
+        {/* HERO */}
+
         <section className="hero">
+
           <div className="hero-copy">
+
             <div className="eyebrow">
-              <span></span> AUTHENTIC NIGERIAN FLAVOUR
+              <span></span>
+              AUTHENTIC NIGERIAN FLAVOUR
             </div>
 
             <h1>
               Good food.
               <br />
-              <em>Made with heart.</em>
+              <em>
+                Made with heart.
+              </em>
             </h1>
 
             <p>
-              Comforting Nigerian meals, prepared fresh and delivered
-              to your door while they're still hot.
+              Comforting Nigerian meals,
+              prepared fresh and delivered
+              to your door while they're
+              still hot.
             </p>
 
             <div className="hero-actions">
-              <a className="primary" href="#menu">
-                Order your meal <ArrowRight size={17} />
+
+              <a
+                className="primary"
+                href="#menu"
+              >
+                Order your meal
+                <ArrowRight size={17} />
               </a>
 
-              <a className="text-link" href="#how">
+              <a
+                className="text-link"
+                href="#how"
+              >
                 How it works
               </a>
+
             </div>
 
             <div className="trust">
+
               <span>
-                <ShieldCheck size={17} /> Freshly prepared
+                <ShieldCheck size={17} />
+                Freshly prepared
               </span>
 
               <span>
-                <Clock3 size={17} /> Fast delivery
+                <Clock3 size={17} />
+                Fast delivery
               </span>
+
             </div>
+
           </div>
 
           <div className="hero-visual">
+
             <div className="hero-card">
-              <img src={MENU[0].image} alt="Jollof rice" />
+
+              <img
+                src={MENU[0].image}
+                alt="Jollof rice"
+              />
 
               <div className="floating-card">
-                <div className="stars">★★★★★</div>
-                <strong>Loved by food lovers</strong>
-                <small>Freshness you can taste.</small>
+
+                <div className="stars">
+                  ★★★★★
+                </div>
+
+                <strong>
+                  Loved by food lovers
+                </strong>
+
+                <small>
+                  Freshness you can taste.
+                </small>
+
               </div>
+
             </div>
+
           </div>
+
         </section>
 
-        <section className="section" id="menu">
+        {/* MENU */}
+
+        <section
+          className="section"
+          id="menu"
+        >
+
           <div className="section-head">
+
             <div>
-              <div className="kicker">OUR MENU</div>
+
+              <div className="kicker">
+                OUR MENU
+              </div>
 
               <h2>
                 Something delicious
                 <br />
-                <em>for everyone.</em>
+                <em>
+                  for everyone.
+                </em>
               </h2>
+
             </div>
 
             <div className="search">
+
               <Search size={18} />
 
               <input
                 value={q}
-                onChange={(e) => setQ(e.target.value)}
+                onChange={(e) =>
+                  setQ(e.target.value)
+                }
                 placeholder="Search meals..."
               />
+
             </div>
+
           </div>
 
           <div className="chips">
+
             {cats.map((c) => (
+
               <button
-                className={cat === c ? "chip active" : "chip"}
-                onClick={() => setCat(c)}
+                className={
+                  cat === c
+                    ? "chip active"
+                    : "chip"
+                }
+                onClick={() =>
+                  setCat(c)
+                }
                 key={c}
               >
                 {c}
               </button>
+
             ))}
+
           </div>
 
           <div className="grid">
-            {items.map((item) => (
-              <article className="food-card"
 
-      key={item.id}>
+            {items.map((item) => (
+
+              <article
+                className="food-card"
+                key={item.id}
+              >
+
                 <div className="food-img">
-                  <img src={item.image} alt={item.name} />
+
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                  />
 
                   {item.tag && (
-                    <span className="tag">{item.tag}</span>
+                    <span className="tag">
+                      {item.tag}
+                    </span>
                   )}
 
                   <button
                     className="add-round"
-                    onClick={() => add(item)}
+                    onClick={() =>
+                      add(item)
+                    }
                   >
                     <Plus size={20} />
                   </button>
+
                 </div>
 
                 <div className="food-body">
+
                   <div className="food-meta">
-                    <span>{item.cat}</span>
-                    <strong>{money(item.price)}</strong>
+
+                    <span>
+                      {item.cat}
+                    </span>
+
+                    <strong>
+                      {money(item.price)}
+                    </strong>
+
                   </div>
 
-                  <h3>{item.name}</h3>
+                  <h3>
+                    {item.name}
+                  </h3>
 
-                  <p>{item.desc}</p>
+                  <p>
+                    {item.desc}
+                  </p>
 
                   <button
                     className="add-line"
-                    onClick={() => add(item)}
+                    onClick={() =>
+                      add(item)
+                    }
                   >
-                    Add to order <Plus size={16} />
+                    Add to order
+                    <Plus size={16} />
                   </button>
+
                 </div>
+
               </article>
+
             ))}
+
           </div>
+
         </section>
 
-        <section className="why" id="why">
+        {/* WHY */}
+
+        <section
+          className="why"
+          id="why"
+        >
+
           <div className="section narrow">
-            <div className="kicker">WHY GBEMIOLOFADA</div>
+
+            <div className="kicker">
+              WHY GBEMIOLOFADA
+            </div>
 
             <h2>
               We don't just serve food.
               <br />
-              <em>We serve comfort.</em>
+              <em>
+                We serve comfort.
+              </em>
             </h2>
 
             <div className="feature-grid">
+
               <Feature
                 icon={<Flame />}
                 title="Made fresh"
@@ -435,16 +791,30 @@ function App() {
                 title="Delivered with care"
                 text="From our kitchen to your doorstep, every order is handled with care."
               />
+
             </div>
+
           </div>
+
         </section>
 
-        <section className="how section" id="how">
-          <div className="kicker">SIMPLE FROM START TO FINISH</div>
+        {/* HOW IT WORKS */}
 
-          <h2>Order in three easy steps.</h2>
+        <section
+          className="how section"
+          id="how"
+        >
+
+          <div className="kicker">
+            SIMPLE FROM START TO FINISH
+          </div>
+
+          <h2>
+            Order in three easy steps.
+          </h2>
 
           <div className="steps">
+
             <Step
               n="01"
               title="Choose your meal"
@@ -462,234 +832,363 @@ function App() {
               title="Enjoy your food"
               text="We prepare it fresh and get it moving to you."
             />
+
           </div>
+
         </section>
+
       </main>
 
+      {/* FOOTER */}
+
       <footer>
+
         <div className="footer-brand">
-          <div className="logo">Go</div>
+
+          <div className="logo">
+            Go
+          </div>
 
           <div>
-            <div className="brand-name">Gbemiolofada</div>
-            <div className="brand-sub">FOODS</div>
+            <div className="brand-name">
+              Gbemiolofada
+            </div>
+
+            <div className="brand-sub">
+              FOODS
+            </div>
           </div>
+
         </div>
 
-        <p>Good food, made with heart.</p>
+        <p>
+          Good food, made with heart.
+        </p>
 
         <small>
-          © 2026 Gbemiolofada Foods. All rights reserved.
+          © 2026 Gbemiolofada Foods.
+          All rights reserved.
         </small>
+
       </footer>
 
+      {/* MOBILE CART */}
+
       {count > 0 && (
+
         <button
           className="mobile-cart"
-          onClick={() => setDrawer(true)}
+          onClick={() =>
+            setDrawer(true)
+          }
         >
+
           <span>
-            <ShoppingBag size={18} /> {count} item
+
+            <ShoppingBag size={18} />
+
+            {count} item
             {count > 1 ? "s" : ""}
+
           </span>
 
           <strong>
-            {money(subtotal)} <ChevronRight size={18} />
+
+            {money(subtotal)}
+
+            <ChevronRight size={18} />
+
           </strong>
+
         </button>
+
       )}
 
-      {/* CART */}
+      {/* CART DRAWER */}
+
       {drawer && (
+
         <div
           className="overlay"
-          onClick={() => setDrawer(false)}
+          onClick={() =>
+            setDrawer(false)
+          }
         >
+
           <aside
             className="drawer"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) =>
+              e.stopPropagation()
+            }
           >
+
             <div className="drawer-head">
+
               <div>
-                <div className="kicker">YOUR ORDER</div>
-                <h2>Ready to eat?</h2>
+
+                <div className="kicker">
+                  YOUR ORDER
+                </div>
+
+                <h2>
+                  Ready to eat?
+                </h2>
+
               </div>
 
-              <button onClick={() => setDrawer(false)}>
+              <button
+                onClick={() =>
+                  setDrawer(false)
+                }
+              >
                 <X />
               </button>
+
             </div>
 
             {cart.length === 0 ? (
+
               <div className="empty">
+
                 <ShoppingBag size={40} />
 
-                <p>Your basket is waiting.</p>
+                <p>
+                  Your basket is waiting.
+                </p>
 
                 <button
                   className="primary"
-                  onClick={() => setDrawer(false)}
+                  onClick={() =>
+                    setDrawer(false)
+                  }
                 >
                   Browse menu
                 </button>
+
               </div>
+
             ) : (
+
               <>
+
                 <div className="cart-items">
+
                   {cart.map((i) => (
-                    <div className="cart-item" key={i.id}>
-                      <img src={i.image} alt={i.name} />
+
+                    <div
+                      className="cart-item"
+                      key={i.id}
+                    >
+
+                      <img
+                        src={i.image}
+                        alt={i.name}
+                      />
 
                       <div className="ci-main">
-                        <strong>{i.name}</strong>
 
-                        <span>{money(i.price)}</span>
+                        <strong>
+                          {i.name}
+                        </strong>
+
+                        <span>
+                          {money(i.price)}
+                        </span>
 
                         <div className="qty">
-                          <button
-                            onClick={() => change(i.id, -1)}
-                          >
-                            <Minus size={14} />
-                          </button>
-
-                          <b>{i.qty}</b>
 
                           <button
-                            onClick={() => change(i.id, 1)}
+                            onClick={() =>
+                              change(
+                                i.id,
+                                -1
+                              )
+                            }
                           >
-                            <Plus size={14} />
+                            <Minus
+                              size={14}
+                            />
                           </button>
+
+                          <b>
+                            {i.qty}
+                          </b>
+
+                          <button
+                            onClick={() =>
+                              change(
+                                i.id,
+                                1
+                              )
+                            }
+                          >
+                            <Plus
+                              size={14}
+                            />
+                          </button>
+
                         </div>
+
                       </div>
+
                     </div>
+
                   ))}
+
                 </div>
 
                 <div className="checkout">
+
                   <div>
-                    <span>Subtotal</span>
-                    <strong>{money(subtotal)}</strong>
+
+                    <span>
+                      Subtotal
+                    </span>
+
+                    <strong>
+                      {money(subtotal)}
+                    </strong>
+
                   </div>
 
                   <div>
-                    <span>Delivery</span>
-                    <strong>{money(delivery)}</strong>
+
+                    <span>
+                      Delivery
+                    </span>
+
+                    <strong>
+                      {money(delivery)}
+                    </strong>
+
                   </div>
 
                   <div className="total">
-                    <span>Total</span>
-                    <strong>{money(total)}</strong>
+
+                    <span>
+                      Total
+                    </span>
+
+                    <strong>
+                      {money(total)}
+                    </strong>
+
                   </div>
 
                   <button
                     className="primary full"
-                    onClick={startCheckout}
+                    onClick={
+                      openCheckout
+                    }
                   >
-                    Continue to checkout <ArrowRight size={17} />
+                    Continue to checkout
+                    <ArrowRight
+                      size={17}
+                    />
                   </button>
 
                   <small>
-                    Secure checkout · Your order details are kept
+                    Secure checkout · Your
+                    order details are kept
                     private.
                   </small>
+
                 </div>
+
               </>
+
             )}
+
           </aside>
+
         </div>
+
       )}
 
-      {/* ACCOUNT */}
-      {accountOpen && (
-        <div
-          className="overlay"
-          onClick={() => setAccountOpen(false)}
-        >
-          <div
-            className="modal"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              className="modal-close"
-              onClick={() => setAccountOpen(false)}
-            >
-              <X />
-            </button>
+      {/* CHECKOUT MODAL */}
 
-            <div className="modal-icon">
-              <User size={25} />
-            </div>
-
-            <div className="kicker">YOUR ACCOUNT</div>
-
-            <h2>Welcome to Gbemiolofada Foods</h2>
-
-            <p>
-              Sign in to save your details, view your orders and
-              make future checkout faster.
-            </p>
-
-            <button
-              className="primary full"
-              onClick={() => {
-                setAccountOpen(false);
-                alert(
-                  "Account sign-in will be connected to the secure backend next."
-                );
-              }}
-            >
-              <LogIn size={17} />
-              Sign in
-            </button>
-
-            <button
-              className="secondary full"
-              onClick={() => {
-                setAccountOpen(false);
-                alert(
-                  "Account registration will be connected to the secure backend next."
-                );
-              }}
-            >
-              Create an account
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* CHECKOUT */}
       {checkoutOpen && (
+
         <div
           className="overlay"
-          onClick={() => setCheckoutOpen(false)}
+          onClick={() => {
+            if (!savingOrder) {
+              setCheckoutOpen(false);
+            }
+          }}
         >
+
           <div
             className="modal checkout-modal"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) =>
+              e.stopPropagation()
+            }
           >
-            <button
-              className="modal-close"
-              onClick={() => setCheckoutOpen(false)}
-            >
-              <X />
-            </button>
 
-            <div className="kicker">CHECKOUT</div>
+            {!savingOrder && (
 
-            <h2>Where should we deliver?</h2>
+              <button
+                className="modal-close"
+                onClick={() =>
+                  setCheckoutOpen(false)
+                }
+              >
+                <X />
+              </button>
+
+            )}
+
+            <div className="kicker">
+              CHECKOUT
+            </div>
+
+            <h2>
+              Where should we deliver?
+            </h2>
 
             <p className="checkout-total">
-              Order total: <strong>{money(total)}</strong>
+              Order total:{" "}
+              <strong>
+                {money(total)}
+              </strong>
             </p>
 
-            <form onSubmit={placeOrder}>
+            {orderError && (
+
+              <div
+                style={{
+                  background: "#fff0f0",
+                  color: "#941219",
+                  border:
+                    "1px solid #efcaca",
+                  padding: "12px",
+                  borderRadius: "10px",
+                  marginBottom: "15px",
+                  fontSize: "13px"
+                }}
+              >
+                {orderError}
+              </div>
+
+            )}
+
+            <form
+              onSubmit={placeOrder}
+            >
+
               <label>
+
                 Full name
+
                 <div className="input-wrap">
+
                   <User size={17} />
+
                   <input
                     required
-                    value={customer.name}
+                    value={
+                      customer.name
+                    }
                     onChange={(e) =>
                       setCustomer({
                         ...customer,
@@ -698,16 +1197,24 @@ function App() {
                     }
                     placeholder="Your full name"
                   />
+
                 </div>
+
               </label>
 
               <label>
+
                 Phone number
+
                 <div className="input-wrap">
+
                   <Phone size={17} />
+
                   <input
                     required
-                    value={customer.phone}
+                    value={
+                      customer.phone
+                    }
                     onChange={(e) =>
                       setCustomer({
                         ...customer,
@@ -716,16 +1223,24 @@ function App() {
                     }
                     placeholder="080..."
                   />
+
                 </div>
+
               </label>
 
               <label>
+
                 Email address
+
                 <div className="input-wrap">
+
                   <Mail size={17} />
+
                   <input
                     type="email"
-                    value={customer.email}
+                    value={
+                      customer.email
+                    }
                     onChange={(e) =>
                       setCustomer({
                         ...customer,
@@ -734,17 +1249,24 @@ function App() {
                     }
                     placeholder="you@example.com"
                   />
+
                 </div>
+
               </label>
 
               <label>
+
                 Delivery address
+
                 <div className="input-wrap textarea-wrap">
+
                   <Home size={17} />
 
                   <textarea
                     required
-                    value={customer.address}
+                    value={
+                      customer.address
+                    }
                     onChange={(e) =>
                       setCustomer({
                         ...customer,
@@ -752,45 +1274,124 @@ function App() {
                       })
                     }
                     placeholder="Enter your full delivery address"
-                    rows="3"
+                    rows="4"
                   />
+
                 </div>
+
               </label>
 
-              <button className="primary full" type="submit">
-                Place order <ArrowRight size={17} />
+              <button
+                type="submit"
+                className="primary full"
+                disabled={savingOrder}
+                style={{
+                  opacity:
+                    savingOrder
+                      ? 0.7
+                      : 1
+                }}
+              >
+
+                {savingOrder
+                  ? "Saving your order..."
+                  : "Place order"}
+
+                {!savingOrder && (
+                  <CheckCircle2
+                    size={17}
+                  />
+                )}
+
               </button>
 
-              <small className="secure-note">
-                <ShieldCheck size={15} />
-                Your information is handled securely.
-              </small>
             </form>
+
           </div>
+
         </div>
+
       )}
 
-      {/* SUCCESS */}
+      {/* ORDER SUCCESS */}
+
       {orderComplete && (
+
         <div className="overlay">
-          <div className="modal success-modal">
-            <div className="success-icon">
-              <CheckCircle2 size={45} />
+
+          <div className="modal">
+
+            <div
+              className="modal-icon"
+              style={{
+                background:
+                  "#e9f7ed",
+                color: "#18864b"
+              }}
+            >
+              <CheckCircle2
+                size={28}
+              />
             </div>
 
-            <div className="kicker">ORDER RECEIVED</div>
+            <div className="kicker">
+              ORDER RECEIVED
+            </div>
 
-            <h2>Thank you, {customer.name.split(" ")[0]}!</h2>
+            <h2>
+              Thank you,{" "}
+              {customer.name}!
+            </h2>
 
             <p>
-              Your order has been received successfully. We'll
-              contact you on <strong>{customer.phone}</strong> to
-              confirm delivery.
+              Your order has been
+              received successfully.
+              We'll contact you on{" "}
+              <strong>
+                {customer.phone}
+              </strong>{" "}
+              to confirm delivery.
             </p>
 
-            <div className="order-summary">
-              <span>Order total</span>
-              <strong>{money(total)}</strong>
+            <div
+              style={{
+                background:
+                  "#fff7f2",
+                border:
+                  "1px solid #ead9d4",
+                borderRadius: "12px",
+                padding: "14px",
+                margin: "15px 0",
+                textAlign: "left"
+              }}
+            >
+
+              <strong>
+                Delivery address
+              </strong>
+
+              <p
+                style={{
+                  marginTop: "5px",
+                  marginBottom: 0,
+                  fontSize: "13px"
+                }}
+              >
+                {customer.address}
+              </p>
+
+            </div>
+
+            <div
+              className="checkout-total"
+              style={{
+                marginBottom: "15px"
+              }}
+            >
+              Order total{" "}
+              <strong>
+                {money(total)}
+              </strong>
             </div>
 
             <button
@@ -799,31 +1400,67 @@ function App() {
             >
               Done
             </button>
+
           </div>
+
         </div>
+
       )}
+
     </div>
   );
 }
 
-function Feature({ icon, title, text }) {
+function Feature({
+  icon,
+  title,
+  text
+}) {
   return (
     <div className="feature">
-      <div className="feature-icon">{icon}</div>
-      <h3>{title}</h3>
-      <p>{text}</p>
+
+      <div className="feature-icon">
+        {icon}
+      </div>
+
+      <h3>
+        {title}
+      </h3>
+
+      <p>
+        {text}
+      </p>
+
     </div>
   );
 }
 
-function Step({ n, title, text }) {
+function Step({
+  n,
+  title,
+  text
+}) {
   return (
     <div className="step">
-      <b>{n}</b>
-      <h3>{title}</h3>
-      <p>{text}</p>
+
+      <b>
+        {n}
+      </b>
+
+      <h3>
+        {title}
+      </h3>
+
+      <p>
+        {text}
+      </p>
+
     </div>
   );
 }
 
-createRoot(document.getElementById("root")).render(<App />);
+createRoot(
+  document.getElementById("root")
+).render(
+  <App />
+);
