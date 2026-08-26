@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import "./styles.css";
 
+const API_URL = "https://gbemiolofada-foods1.vercel.app";
+
 const MENU = [
   {
     id: "jollof",
