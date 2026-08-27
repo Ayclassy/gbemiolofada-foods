@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import Admin from "./Admin.jsx";
 import { createRoot } from "react-dom/client";
 import {
   RefreshCw,
@@ -366,6 +367,4 @@ function Admin() {
   );
 }
 
-createRoot(
-  document.getElementById("root")
-).render(<Admin />);
+export default Admin;
