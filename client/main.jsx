@@ -1460,6 +1460,16 @@ function AdminOrders() {
   const [loading, setLoading] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
 
+  useEffect(() => {
+    if (!loggedIn) return;
+
+    const timer = setInterval(() => {
+      loadOrders(password);
+    }, 15000);
+
+    return () => clearInterval(timer);
+  }, [loggedIn, password]);
+  
   async function loadOrders(adminPassword = password) {
     setLoading(true);
     setError("");
