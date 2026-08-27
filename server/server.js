@@ -73,10 +73,7 @@ if (error) {
 
   return res.status(500).json({
     success: false,
-    message: `Database error: ${error.message}`,
-    details: error.details || null,
-    hint: error.hint || null,
-    code: error.code || null
+    message: "Unable to save the order."
   });
 }
 
