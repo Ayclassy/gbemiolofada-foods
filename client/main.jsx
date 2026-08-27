@@ -1453,8 +1453,231 @@ function Step({
   );
 }
 
-createRoot(
-  document.getElementById("root")
-).render(
-  <App />
+function AdminOrders() {
+  const [password, setPassword] = useState("");
+  const [orders, setOrders] = useState([]);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  async function loadOrders(adminPassword = password) {
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch(
+        `${API_URL}/api/admin/orders`,
+        {
+          headers: {
+            "x-admin-password": adminPassword
+          }
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Unable to load orders.");
+      }
+
+      setOrders(data.orders || []);
+      setLoggedIn(true);
+    } catch (err) {
+      setLoggedIn(false);
+      setError(err.message || "Unable to load orders.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function submitLogin(e) {
+    e.preventDefault();
+    if (password.trim()) {
+      loadOrders(password);
+    }
+  }
+
+  if (!loggedIn) {
+    return (
+      <div style={adminStyles.page}>
+        <div style={adminStyles.card}>
+          <h1 style={adminStyles.title}>Gbemiolofada Foods</h1>
+          <p style={adminStyles.subtitle}>Admin orders</p>
+
+          <form onSubmit={submitLogin}>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter admin password"
+              style={adminStyles.input}
+            />
+
+            <button type="submit" style={adminStyles.button}>
+              {loading ? "Checking..." : "Open orders"}
+            </button>
+          </form>
+
+          {error && <p style={adminStyles.error}>{error}</p>}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={adminStyles.page}>
+      <div style={adminStyles.container}>
+        <div style={adminStyles.header}>
+          <div>
+            <h1 style={adminStyles.title}>Orders</h1>
+            <p style={adminStyles.subtitle}>
+              {orders.length} order{orders.length === 1 ? "" : "s"} received
+            </p>
+          </div>
+
+          <button
+            style={adminStyles.button}
+            onClick={() => loadOrders()}
+            disabled={loading}
+          >
+            {loading ? "Refreshing..." : "Refresh"}
+          </button>
+        </div>
+
+        {error && <p style={adminStyles.error}>{error}</p>}
+
+        {orders.length === 0 ? (
+          <div style={adminStyles.card}>
+            <p>No orders found yet.</p>
+          </div>
+        ) : (
+          <div style={adminStyles.grid}>
+            {orders.map((order) => (
+              <article key={order.id} style={adminStyles.orderCard}>
+                <div style={adminStyles.orderTop}>
+                  <strong>{order.customer_name || "Customer"}</strong>
+                  <span style={adminStyles.status}>
+                    {order.status || "pending"}
+                  </span>
+                </div>
+
+                <p><b>Phone:</b> {order.customer_phone || "—"}</p>
+                <p><b>Email:</b> {order.customer_email || "—"}</p>
+                <p><b>Address:</b> {order.delivery_address || "—"}</p>
+                <p><b>Total:</b> {money(order.total)}</p>
+                <p><b>Created:</b> {order.created_at ? new Date(order.created_at).toLocaleString() : "—"}</p>
+
+                <details>
+                  <summary>View items</summary>
+                  <pre style={adminStyles.items}>
+                    {JSON.stringify(order.items || [], null, 2)}
+                  </pre>
+                </details>
+              </article>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+const adminStyles = {
+  page: {
+    minHeight: "100vh",
+    background: "#fff8f3",
+    padding: "24px",
+    fontFamily: "Arial, sans-serif",
+    color: "#351316"
+  },
+  container: {
+    maxWidth: "1100px",
+    margin: "0 auto"
+  },
+  card: {
+    maxWidth: "420px",
+    margin: "80px auto",
+    background: "white",
+    padding: "28px",
+    borderRadius: "16px",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.08)"
+  },
+  title: {
+    margin: "0 0 6px",
+    color: "#8f1017"
+  },
+  subtitle: {
+    color: "#765f5f",
+    marginTop: 0
+  },
+  input: {
+    width: "100%",
+    boxSizing: "border-box",
+    padding: "14px",
+    margin: "16px 0 12px",
+    border: "1px solid #dcc8c3",
+    borderRadius: "10px",
+    fontSize: "16px"
+  },
+  button: {
+    border: 0,
+    borderRadius: "10px",
+    padding: "12px 18px",
+    background: "#8f1017",
+    color: "white",
+    fontWeight: "bold",
+    cursor: "pointer"
+  },
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: "16px",
+    marginBottom: "24px"
+  },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(290px, 1fr))",
+    gap: "18px"
+  },
+  orderCard: {
+    background: "white",
+    padding: "20px",
+    borderRadius: "16px",
+    boxShadow: "0 8px 24px rgba(0,0,0,0.07)"
+  },
+  orderTop: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: "12px",
+    marginBottom: "12px",
+    fontSize: "18px"
+  },
+  status: {
+    background: "#fff0c7",
+    color: "#765100",
+    padding: "5px 8px",
+    borderRadius: "999px",
+    fontSize: "12px"
+  },
+  items: {
+    whiteSpace: "pre-wrap",
+    overflowX: "auto",
+    background: "#faf4f0",
+    padding: "10px",
+    borderRadius: "8px",
+    fontSize: "12px"
+  },
+  error: {
+    color: "#a01818",
+    background: "#fff0f0",
+    padding: "12px",
+    borderRadius: "10px"
+  }
+};
+
+const isAdminPage = window.location.pathname === "/admin/orders";
+
+createRoot(document.getElementById("root")).render(
+  isAdminPage ? <AdminOrders /> : <App />
 );
