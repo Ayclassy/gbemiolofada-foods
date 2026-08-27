@@ -1490,6 +1490,44 @@ function AdminOrders() {
     }
   }
 
+  async function updateStatus(orderId, status) {
+    setError("");
+
+    try {
+      const response = await fetch(
+        `${API_URL}/api/admin/orders/${orderId}/status`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            "x-admin-password": password
+          },
+          body: JSON.stringify({ status })
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(
+          data.message || "Unable to update order status."
+        );
+      }
+
+      setOrders((currentOrders) =>
+        currentOrders.map((order) =>
+          order.id === orderId
+            ? { ...order, status: data.order.status }
+            : order
+        )
+      );
+    } catch (err) {
+      setError(
+        err.message || "Unable to update order status."
+      );
+    }
+  }
+  
   function submitLogin(e) {
     e.preventDefault();
     if (password.trim()) {
