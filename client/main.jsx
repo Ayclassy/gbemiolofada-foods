@@ -1467,25 +1467,19 @@ function AdminOrders() {
   useEffect(() => {
     if (!loggedIn) return;
 
-    let cancelled = false;
-    let timer;
+    const refreshOrders = () => {
+      loadOrders(password);
+    };
 
-    async function refreshOrders() {
-      await loadOrders(password);
-
-      if (!cancelled) {
-        timer = setTimeout(refreshOrders, 15000);
-      }
-    }
-
-    timer = setTimeout(refreshOrders, 15000);
+    const intervalId = window.setInterval(
+      refreshOrders,
+      15000
+    );
 
     return () => {
-      cancelled = true;
-      clearTimeout(timer);
+      window.clearInterval(intervalId);
     };
   }, [loggedIn, password]);
-;
   
   async function loadOrders(adminPassword = password) {
     setLoading(true);
