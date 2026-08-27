@@ -161,12 +161,6 @@ const API_URL = (
   "https://gbemiolofada-foods1.vercel.app"
 ).replace(/\/$/, "");
 
-console.log("====================================");
-console.log("GBEMIOLOFADA FOODS");
-console.log("Backend API URL:", API_URL);
-console.log("Orders endpoint:", `${API_URL}/api/orders`);
-console.log("====================================");
-
 function App() {
   const [cat, setCat] = useState("All");
   const [q, setQ] = useState("");
