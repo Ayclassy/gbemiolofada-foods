@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   Search,
@@ -1459,6 +1459,9 @@ function AdminOrders() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
+  
+    const knownOrderIds = useRef(new Set());
+  const firstOrdersLoad = useRef(true);
 
   useEffect(() => {
     if (!loggedIn) return;
