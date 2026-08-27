@@ -55,6 +55,58 @@ app.get("/api/admin/orders", requireAdmin, async (req, res) => {
   }
 });
 
+app.patch(
+  "/api/admin/orders/:id/status",
+  requireAdmin,
+  async (req, res) => {
+    try {
+      const allowedStatuses = [
+        "pending",
+        "preparing",
+        "ready",
+        "completed",
+        "cancelled"
+      ];
+
+      const { status } = req.body;
+
+      if (!allowedStatuses.includes(status)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid order status."
+        });
+      }
+
+      const { data, error } = await supabase
+        .from("orders")
+        .update({ status })
+        .eq("id", req.params.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Order status database error:", error);
+
+        return res.status(500).json({
+          success: false,
+          message: "Unable to update order status."
+        });
+      }
+
+      res.json({
+        success: true,
+        order: data
+      });
+    } catch (error) {
+      console.error("Order status server error:", error);
+
+      res.status(500).json({
+        success: false,
+        message: "Unable to update order status."
+      });
+    }
+  }
+);
 
 app.get("/", (req, res) => {
   res.json({
