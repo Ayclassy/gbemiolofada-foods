@@ -10,6 +10,52 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+function requireAdmin(req, res, next) {
+  const providedPassword = req.headers["x-admin-password"];
+
+  if (
+    !process.env.ADMIN_PASSWORD ||
+    providedPassword !== process.env.ADMIN_PASSWORD
+  ) {
+    return res.status(401).json({
+      success: false,
+      message: "Admin password is incorrect."
+    });
+  }
+
+  next();
+}
+
+app.get("/api/admin/orders", requireAdmin, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("orders")
+      .select("*");
+
+    if (error) {
+      console.error("Admin orders database error:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to load orders."
+      });
+    }
+
+    res.json({
+      success: true,
+      orders: data || []
+    });
+  } catch (error) {
+    console.error("Admin orders server error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Unable to load orders."
+    });
+  }
+});
+
+
 app.get("/", (req, res) => {
   res.json({
     success: true,
