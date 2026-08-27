@@ -1459,6 +1459,7 @@ function AdminOrders() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
+  const [newOrderIds, setNewOrderIds] = useState(new Set());
   
     const knownOrderIds = useRef(new Set());
   const firstOrdersLoad = useRef(true);
@@ -1734,6 +1735,11 @@ const adminStyles = {
     padding: "20px",
     borderRadius: "16px",
     boxShadow: "0 8px 24px rgba(0,0,0,0.07)"
+  },
+    newOrderCard: {
+    background: "#fff4c2",
+    border: "3px solid #e0a400",
+    boxShadow: "0 0 0 4px rgba(224, 164, 0, 0.18)"
   },
   orderTop: {
     display: "flex",
