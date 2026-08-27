@@ -1493,8 +1493,28 @@ function AdminOrders() {
         throw new Error(data.message || "Unable to load orders.");
       }
 
-      setOrders(data.orders || []);
+      const incomingOrders = data.orders || [];
+
+      const newOrders = incomingOrders.filter(
+        (order) => !knownOrderIds.current.has(order.id)
+      );
+
+      if (!firstOrdersLoad.current && newOrders.length > 0) {
+        alert(
+          `New order received from ${
+            newOrders[0].customer_name || "a customer"
+          }.`
+        );
+      }
+
+      incomingOrders.forEach((order) => {
+        knownOrderIds.current.add(order.id);
+      });
+
+      firstOrdersLoad.current = false;
+      setOrders(incomingOrders);
       setLoggedIn(true);
+
     } catch (err) {
       setLoggedIn(false);
       setError(err.message || "Unable to load orders.");
