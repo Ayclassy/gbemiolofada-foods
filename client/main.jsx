@@ -1629,7 +1629,14 @@ function AdminOrders() {
         ) : (
           <div style={adminStyles.grid}>
             {orders.map((order) => (
-              <article key={order.id} style={adminStyles.orderCard}>
+              <article
+  key={order.id}
+  style={{
+    ...adminStyles.orderCard,
+    ...(newOrderIds.has(order.id)
+      ? adminStyles.newOrderCard
+      : {})
+  }}
                 <div style={adminStyles.orderTop}>
                   <strong>{order.customer_name || "Customer"}</strong>
                   <span style={adminStyles.status}>
