@@ -1456,5 +1456,7 @@ function Step({
 createRoot(
   document.getElementById("root")
 ).render(
-  <App />
+  window.location.pathname === "/admin"
+    ? <Admin />
+    : <App />
 );
