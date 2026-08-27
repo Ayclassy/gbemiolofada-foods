@@ -1650,6 +1650,7 @@ function AdminOrders() {
       ? adminStyles.newOrderCard
       : {})
   }}
+              >
                 <div style={adminStyles.orderTop}>
                   <strong>{order.customer_name || "Customer"}</strong>
                   <span style={adminStyles.status}>
