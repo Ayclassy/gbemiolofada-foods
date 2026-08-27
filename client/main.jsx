@@ -1500,6 +1500,10 @@ function AdminOrders() {
         (order) => !knownOrderIds.current.has(order.id)
       );
 
+      setNewOrderIds(
+  new Set(newOrders.map((order) => order.id))
+);
+
       if (!firstOrdersLoad.current && newOrders.length > 0) {
         alert(
           `New order received from ${
