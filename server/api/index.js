@@ -21,10 +21,53 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+/*
+|--------------------------------------------------------------------------
+| ADMIN AUTHENTICATION
+|--------------------------------------------------------------------------
+| The admin page must send:
+|
+| Authorization: Bearer YOUR_ADMIN_KEY
+|
+| The key is stored in Vercel Environment Variables as ADMIN_KEY.
+|--------------------------------------------------------------------------
+*/
+
+function checkAdmin(req, res, next) {
+  const adminKey = process.env.ADMIN_KEY;
+
+  if (!adminKey) {
+    console.error("ADMIN_KEY is not configured.");
+
+    return res.status(500).json({
+      success: false,
+      message: "Admin access is not configured on the server."
+    });
+  }
+
+  const authorization = req.headers.authorization || "";
+
+  const expected = `Bearer ${adminKey}`;
+
+  if (authorization !== expected) {
+    return res.status(401).json({
+      success: false,
+      message: "Unauthorized."
+    });
+  }
+
+  next();
+}
+
+/*
+|--------------------------------------------------------------------------
+| CREATE ORDER
+|--------------------------------------------------------------------------
+*/
+
 app.post("/api/orders", async (req, res) => {
   try {
     console.log("ORDER REQUEST RECEIVED");
-    console.log("Customer:", req.body);
 
     const {
       customer_name,
@@ -78,7 +121,7 @@ app.post("/api/orders", async (req, res) => {
       });
     }
 
-    console.log("ORDER SAVED:", data);
+    console.log("ORDER SAVED:", data.id);
 
     return res.status(201).json({
       success: true,
@@ -93,6 +136,106 @@ app.post("/api/orders", async (req, res) => {
       success: false,
       message: "Something went wrong.",
       error: error.message
+    });
+  }
+});
+
+/*
+|--------------------------------------------------------------------------
+| GET ALL ORDERS — ADMIN ONLY
+|--------------------------------------------------------------------------
+*/
+
+app.get("/api/orders", checkAdmin, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("orders")
+      .select("*")
+      .order("created_at", {
+        ascending: false
+      });
+
+    if (error) {
+      console.error("SUPABASE ADMIN ERROR:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to retrieve orders."
+      });
+    }
+
+    return res.json({
+      success: true,
+      orders: data || []
+    });
+
+  } catch (error) {
+    console.error("ADMIN ORDERS ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong."
+    });
+  }
+});
+
+/*
+|--------------------------------------------------------------------------
+| UPDATE ORDER STATUS — ADMIN ONLY
+|--------------------------------------------------------------------------
+*/
+
+app.patch("/api/orders/:id/status", checkAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const allowedStatuses = [
+      "pending",
+      "confirmed",
+      "preparing",
+      "out_for_delivery",
+      "delivered",
+      "cancelled"
+    ];
+
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid order status."
+      });
+    }
+
+    const { data, error } = await supabase
+      .from("orders")
+      .update({
+        status
+      })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("STATUS UPDATE ERROR:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Unable to update order status."
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Order status updated successfully.",
+      order: data
+    });
+
+  } catch (error) {
+    console.error("STATUS SERVER ERROR:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Something went wrong."
     });
   }
 });
