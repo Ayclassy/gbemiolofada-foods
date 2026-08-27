@@ -68,14 +68,17 @@ app.post("/api/orders", async (req, res) => {
       .select()
       .single();
 
-    if (error) {
-      console.error("Database error:", error);
+if (error) {
+  console.error("Database error:", error);
 
-      return res.status(500).json({
-        success: false,
-        message: "Unable to save the order."
-      });
-    }
+  return res.status(500).json({
+    success: false,
+    message: `Database error: ${error.message}`,
+    details: error.details || null,
+    hint: error.hint || null,
+    code: error.code || null
+  });
+}
 
     res.status(201).json({
       success: true,
