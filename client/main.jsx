@@ -1724,11 +1724,24 @@ const adminStyles = {
     borderRadius: "8px",
     fontSize: "12px"
   },
-  error: {
+    error: {
     color: "#a01818",
     background: "#fff0f0",
     padding: "12px",
     borderRadius: "10px"
+  },
+  statusControl: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px",
+    margin: "14px 0"
+  },
+  select: {
+    padding: "10px",
+    border: "1px solid #dcc8c3",
+    borderRadius: "8px",
+    fontSize: "15px",
+    background: "white"
   }
 };
 
