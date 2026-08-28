@@ -1465,14 +1465,16 @@ function AdminOrders() {
   const firstOrdersLoad = useRef(true);
 
   useEffect(() => {
-    if (!loggedIn) return;
+    if (!loggedIn || !password) {
+      return;
+    }
 
-    const refreshOrders = () => {
+    const refreshEvery15Seconds = () => {
       loadOrders(password);
     };
 
     const intervalId = window.setInterval(
-      refreshOrders,
+      refreshEvery15Seconds,
       15000
     );
 
